@@ -3,21 +3,25 @@ import { CartContext } from "../context/CartContext";
 import { useNavigate } from "react-router-dom";
 
 function Checkout() {
-  const { cart } = useContext(CartContext);
+  const { cart } = useContext(CartContext) || {};
   const navigate = useNavigate();
 
-  const total = cart.reduce((sum, item) => sum + Number(item.price), 0);
+  const safeCart = cart || [];
+
+  const total = safeCart.reduce((sum, item) => {
+    return sum + (Number(item.price) || 0);
+  }, 0);
 
   return (
     <div style={{ padding: "20px" }}>
       <h2>Checkout</h2>
 
-      {cart.length === 0 ? (
+      {safeCart.length === 0 ? (
         <p>No items in cart</p>
       ) : (
         <>
-          {cart.map((item, index) => (
-            <div key={index} style={{ margin: "10px" }}>
+          {safeCart.map((item, index) => (
+            <div key={index}>
               <p>{item.name} - ₹{item.price}</p>
             </div>
           ))}
@@ -29,7 +33,8 @@ function Checkout() {
             style={{
               padding: "10px",
               background: "green",
-              color: "white"
+              color: "white",
+              border: "none"
             }}
           >
             Place Order
