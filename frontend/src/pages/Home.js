@@ -6,7 +6,7 @@ function Home() {
   const navigate = useNavigate();
 
   const handleSearch = () => {
-    navigate(`/results?query=${search}`);
+    navigate(`/results?q=${search}`);
   };
 
   return (
@@ -19,26 +19,12 @@ function Home() {
         placeholder="Search product..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{
-          padding: "12px",
-          width: "300px",
-          borderRadius: "10px",
-          border: "1px solid gray"
-        }}
+        style={{ padding: "10px", width: "200px" }}
       />
 
       <br /><br />
 
-      <button
-        onClick={handleSearch}
-        style={{
-          padding: "10px 20px",
-          borderRadius: "10px",
-          backgroundColor: "black",
-          color: "white",
-          border: "none"
-        }}
-      >
+      <button onClick={handleSearch} style={{ padding: "10px" }}>
         Search
       </button>
     </div>

@@ -1,36 +1,41 @@
-import React from "react";
+import React, { useContext } from "react";
+import { CartContext } from "../context/CartContext";
+import { useNavigate } from "react-router-dom";
 
 function Checkout() {
-  const cart = JSON.parse(localStorage.getItem("cart")) || [];
+  const { cart } = useContext(CartContext);
+  const navigate = useNavigate();
 
   const total = cart.reduce((sum, item) => sum + Number(item.price), 0);
-
-  const placeOrder = () => {
-    localStorage.removeItem("cart");
-    window.location.href = "/success";
-  };
 
   return (
     <div style={{ padding: "20px" }}>
       <h2>Checkout</h2>
 
-      {cart.map((item, i) => (
-        <p key={i}>{item.name} - ₹{item.price}</p>
-      ))}
+      {cart.length === 0 ? (
+        <p>No items in cart</p>
+      ) : (
+        <>
+          {cart.map((item, index) => (
+            <div key={index} style={{ margin: "10px" }}>
+              <p>{item.name} - ₹{item.price}</p>
+            </div>
+          ))}
 
-      <h3>Total: ₹{total}</h3>
+          <h3>Total: ₹{total}</h3>
 
-      <button
-        onClick={placeOrder}
-        style={{
-          padding: "10px",
-          background: "black",
-          color: "white",
-          borderRadius: "10px"
-        }}
-      >
-        Place Order
-      </button>
+          <button
+            onClick={() => navigate("/success")}
+            style={{
+              padding: "10px",
+              background: "green",
+              color: "white"
+            }}
+          >
+            Place Order
+          </button>
+        </>
+      )}
     </div>
   );
 }

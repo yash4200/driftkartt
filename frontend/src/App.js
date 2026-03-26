@@ -1,16 +1,16 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";
-import Results from "./pages/Results";
+import { CartProvider } from "./context/CartContext";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/results" element={<Results />} />
-      </Routes>
-    </Router>
+    <CartProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/results" element={<Results />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/success" element={<Success />} />
+        </Routes>
+      </Router>
+    </CartProvider>
   );
 }
-
-export default App;
