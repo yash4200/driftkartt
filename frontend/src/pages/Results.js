@@ -22,7 +22,7 @@ function Results() {
     if (!query) return;
     setLoading(true);
     setError(null);
-    axios.get(`http://localhost:5000/products?query=${query}`)
+    axios.get("https://driftkartt.onrender.com/products")
       .then(res => setProducts(res.data))
       .catch(err => {
         console.log(err);
