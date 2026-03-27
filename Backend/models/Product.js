@@ -9,5 +9,4 @@ const ProductSchema = new mongoose.Schema({
     image: String
 });
 
-// Check karo ki 'Product' ka spelling sahi ho
 module.exports = mongoose.model('Product', ProductSchema);
