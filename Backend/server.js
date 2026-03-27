@@ -46,3 +46,7 @@ app.post("/add-product", async (req, res) => {
 app.listen(5000, () => {
   console.log("Server running on port 5000");
 });
+const cors = require('cors');
+
+// Add this right after `const app = express();`
+app.use(cors());
