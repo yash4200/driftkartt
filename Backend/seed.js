@@ -1,26 +1,30 @@
-require('dotenv').config();
 const mongoose = require('mongoose');
 const Product = require('./models/Product');
 
-mongoose.connect(process.env.MONGO_URI)
-    .then(async () => {
-        console.log("Database Connected for Seeding...");
+// Final Connection String
+const MONGO_URI = "mongodb+srv://driftkartt:Yash12345@driftkart.okfymoi.mongodb.net/driftkart?retryWrites=true&w=majority&appName=driftkart";
 
-        // Purane products delete karo pehle
+mongoose.connect(MONGO_URI)
+    .then(async () => {
+        console.log("🚀 Database Connected! Cleaning old data...");
+
+        // Purana data saaf karo
         await Product.deleteMany({});
 
         const products = [];
-        const names = ["Milk", "Bread", "Eggs", "Butter", "Cheese", "Coke", "Chips", "Apple", "Banana", "Rice"];
-        const stores = ["Reliance Fresh", "Big Bazaar", "Local Kirana", "Zudio Food", "Quick Mart"];
+        const names = ["Milk", "Bread", "Eggs", "Butter", "Cheese", "Coke", "Chips", "Apple", "Banana", "Rice", "Atta", "Dal", "Soap"];
+        const stores = ["Reliance Fresh", "Big Bazaar", "Apna Store", "Zomato Mart", "Quick Mart"];
+
+        console.log("📦 Generating 100 products...");
 
         for (let i = 1; i <= 100; i++) {
             const randomName = names[Math.floor(Math.random() * names.length)];
             const randomStore = stores[Math.floor(Math.random() * stores.length)];
-            const randomDist = (Math.random() * 5 + 0.5).toFixed(1); // 0.5 se 5.5 km tak
+            const randomDist = (Math.random() * 4 + 0.5).toFixed(1); // 0.5km se 4.5km
 
             products.push({
-                name: `${randomName} Pack #${i}`,
-                price: Math.floor(Math.random() * 500) + 20,
+                name: `${randomName} - Fresh Pack ${i}`,
+                price: Math.floor(Math.random() * 450) + 15,
                 storeName: randomStore,
                 distance: `${randomDist} km`,
                 category: "Grocery",
@@ -29,7 +33,10 @@ mongoose.connect(process.env.MONGO_URI)
         }
 
         await Product.insertMany(products);
-        console.log("✅ 100 Products Added Successfully!");
+        console.log("✅ 100 Products Added Successfully to MongoDB Atlas!");
         process.exit();
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+        console.error("❌ Connection Error:", err);
+        process.exit(1);
+    });
