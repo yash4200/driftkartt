@@ -10,16 +10,16 @@ app.use(cors());
 app.use(express.json());
 
 // 2. MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://driftkartt:Yash12345@driftkart.okfymoi.mongodb.net/driftkart?retryWrites=true&w=majority&appName=driftkart";
+
+mongoose.connect(MONGO_URI)
   .then(() => {
     console.log("✅ Database Connected (Atlas)");
-    // Yeh check karne ke liye ki models load huye ya nahi
     console.log("Registered Models:", mongoose.modelNames());
   })
   .catch((err) => console.log("❌ DB Error:", err));
 
 // 3. Models Import
-// Ensure ki tumhare 'models' folder mein Order.js aur Product.js dono hain
 const Order = require('./models/Order');
 const Product = require('./models/Product');
 
@@ -36,7 +36,7 @@ app.get('/products', async (req, res) => {
     const { query } = req.query;
     let filter = {};
 
-    if (query && query !== 'undefined') {
+    if (query && query !== 'undefined' && query !== '') {
       // Name mein search karne ke liye Case-Insensitive regex
       filter = { name: { $regex: query, $options: 'i' } };
     }
@@ -62,6 +62,38 @@ app.post('/api/orders', async (req, res) => {
   } catch (error) {
     console.error("Order Save Error:", error);
     res.status(500).json({ success: false, message: "Order failed!", error: error.message });
+  }
+});
+
+// C. Admin Route: Add New Product (NEW 🚀)
+app.post('/products/add', async (req, res) => {
+  try {
+    const { name, price, storeName, distance, category, image } = req.body;
+
+    const newProduct = new Product({
+      name,
+      price,
+      storeName,
+      distance: distance || "1.0 km", // Default distance if not provided
+      category: category || "Grocery",
+      image: image || "https://via.placeholder.com/150"
+    });
+
+    const savedProduct = await newProduct.save();
+    res.status(201).json({ success: true, message: "Product added!", product: savedProduct });
+  } catch (error) {
+    console.error("Add Product Error:", error);
+    res.status(500).json({ success: false, message: "Product add nahi hua!", error: error.message });
+  }
+});
+
+// D. Admin Route: Delete Product (NEW 🚀)
+app.delete('/products/:id', async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Product deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Delete failed", error: error.message });
   }
 });
 
