@@ -6,6 +6,7 @@ import { CartContext } from "../context/CartContext";
 function Results() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { addToCart } = useContext(CartContext);
@@ -13,137 +14,215 @@ function Results() {
   const query = new URLSearchParams(location.search).get("q");
 
   useEffect(() => {
+    if (!query) return;
     setLoading(true);
+    setError(null);
+
+    // Render Backend API Call
     axios
       .get(`https://driftkartt.onrender.com/products?query=${query}`)
       .then((res) => {
-        setProducts(res.data);
+        setProducts(res.data || []);
         setLoading(false);
       })
       .catch((err) => {
-        console.log(err);
+        console.error("API Error:", err);
+        setError("Unable to fetch deals. Please check your connection.");
         setLoading(false);
       });
   }, [query]);
 
+  // Logic to find the cheapest product
   const prices = products.map((p) => Number(p.price));
   const minPrice = prices.length > 0 ? Math.min(...prices) : null;
 
   const styles = {
     wrapper: {
-      padding: "40px 20px",
+      padding: "50px 20px",
       maxWidth: "1200px",
       margin: "0 auto",
-      fontFamily: "'Inter', sans-serif",
-      backgroundColor: "#f8f9fa",
+      fontFamily: "'Poppins', sans-serif",
+      backgroundColor: "#fdfdfd",
       minHeight: "100vh",
     },
-    header: {
-      fontSize: "1.8rem",
-      fontWeight: "700",
-      marginBottom: "24px",
-      color: "#2d3436",
+    headerSection: {
+      textAlign: "center",
+      marginBottom: "40px",
+    },
+    headerText: {
+      fontSize: "2rem",
+      fontWeight: "800",
+      color: "#1a1a1a",
+      margin: "0",
+    },
+    subText: {
+      color: "#636e72",
+      fontSize: "1rem",
+      marginTop: "5px",
     },
     grid: {
       display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-      gap: "20px",
+      gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+      gap: "25px",
+      marginTop: "20px",
     },
     card: (isBest) => ({
       backgroundColor: "white",
-      borderRadius: "16px",
-      padding: "20px",
+      borderRadius: "20px",
+      padding: "24px",
       position: "relative",
       boxShadow: isBest
-        ? "0 10px 20px rgba(46, 204, 113, 0.15)"
-        : "0 4px 6px rgba(0,0,0,0.05)",
-      border: isBest ? "2px solid #2ecc71" : "1px solid #eee",
-      transition: "transform 0.2s ease",
+        ? "0 20px 40px rgba(46, 204, 113, 0.15)"
+        : "0 10px 20px rgba(0,0,0,0.05)",
+      border: isBest ? "2px solid #2ecc71" : "1px solid #f1f1f1",
+      transition: "all 0.3s ease",
       display: "flex",
       flexDirection: "column",
-      justifyContent: "space-between"
+      cursor: "pointer",
     }),
     badge: {
       position: "absolute",
-      top: "-12px",
-      right: "20px",
+      top: "-15px",
+      left: "20px",
       backgroundColor: "#2ecc71",
       color: "white",
-      padding: "4px 12px",
-      borderRadius: "20px",
+      padding: "6px 16px",
+      borderRadius: "50px",
+      fontSize: "0.8rem",
+      fontWeight: "700",
+      boxShadow: "0 4px 12px rgba(46, 204, 113, 0.3)",
+      zIndex: "10",
+    },
+    shopInfo: {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: "15px",
+    },
+    shopBadge: {
+      backgroundColor: "#f0f2f5",
+      padding: "4px 10px",
+      borderRadius: "8px",
       fontSize: "0.75rem",
-      fontWeight: "bold",
-      boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-    },
-    shopName: {
-      fontSize: "0.85rem",
-      color: "#636e72",
-      textTransform: "uppercase",
-      letterSpacing: "1px",
-      marginBottom: "5px",
-    },
-    productName: {
-      fontSize: "1.2rem",
       fontWeight: "600",
-      margin: "0 0 10px 0",
-      color: "#2d3436",
+      color: "#555",
+      textTransform: "uppercase",
     },
-    priceTag: {
-      fontSize: "1.5rem",
-      fontWeight: "800",
+    title: {
+      fontSize: "1.25rem",
+      fontWeight: "700",
+      color: "#2d3436",
+      lineHeight: "1.4",
+      height: "55px",
+      overflow: "hidden",
+      marginBottom: "15px",
+    },
+    priceRow: {
+      display: "flex",
+      alignItems: "baseline",
+      gap: "8px",
+      marginTop: "auto",
+    },
+    currency: {
+      fontSize: "1rem",
+      fontWeight: "600",
       color: "#0984e3",
     },
-    addToCartBtn: {
-      marginTop: "15px",
-      padding: "12px",
-      borderRadius: "10px",
+    amount: {
+      fontSize: "2rem",
+      fontWeight: "900",
+      color: "#0984e3",
+    },
+    btn: {
+      marginTop: "20px",
+      padding: "14px",
+      borderRadius: "12px",
       border: "none",
-      backgroundColor: "#2d3436",
+      backgroundColor: "#1a1a1a",
       color: "white",
       fontWeight: "600",
+      fontSize: "1rem",
       cursor: "pointer",
-      transition: "opacity 0.2s",
+      transition: "all 0.2s ease",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      gap: "10px",
     },
-    checkoutFab: {
+    checkoutBtn: {
       position: "fixed",
-      bottom: "30px",
-      right: "30px",
-      padding: "15px 30px",
-      borderRadius: "50px",
+      bottom: "40px",
+      right: "40px",
+      padding: "18px 35px",
+      borderRadius: "100px",
       backgroundColor: "#00b894",
       color: "white",
+      fontSize: "1.1rem",
+      fontWeight: "700",
       border: "none",
-      fontWeight: "bold",
-      boxShadow: "0 10px 20px rgba(0, 184, 148, 0.3)",
+      boxShadow: "0 15px 30px rgba(0, 184, 148, 0.4)",
       cursor: "pointer",
-      zIndex: 100,
+      zIndex: "1000",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
     }
   };
 
-  if (loading) return <div style={styles.wrapper}>Loading best deals...</div>;
+  if (loading) return (
+    <div style={styles.wrapper}>
+      <div style={{ textAlign: "center", marginTop: "100px" }}>
+        <h2 style={{ color: "#0984e3" }}>🚀 Scouting the best prices...</h2>
+        <p>Checking Amazon, Flipkart and more for "{query}"</p>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div style={styles.wrapper}>
+      <div style={{ textAlign: "center", padding: "50px", backgroundColor: "#fff5f5", borderRadius: "20px" }}>
+        <h2 style={{ color: "#ff4757" }}>{error}</h2>
+        <button onClick={() => window.location.reload()} style={styles.btn}>Try Again</button>
+      </div>
+    </div>
+  );
 
   return (
     <div style={styles.wrapper}>
-      <h2 style={styles.header}>Showing results for "{query}"</h2>
+      <div style={styles.headerSection}>
+        <h2 style={styles.headerText}>Smart Comparison</h2>
+        <p style={styles.subText}>Found {products.length} deals for <strong>"{query}"</strong></p>
+      </div>
 
       <div style={styles.grid}>
         {products.map((item, index) => {
           const isBest = Number(item.price) === minPrice;
           return (
-            <div key={index} style={styles.card(isBest)}>
-              {isBest && <div style={styles.badge}>🔥 CHEAPEST</div>}
+            <div
+              key={index}
+              style={styles.card(isBest)}
+              onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-10px)"}
+              onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              {isBest && <div style={styles.badge}>🏆 BEST VALUE</div>}
 
-              <div>
-                <span style={styles.shopName}>{item.shop}</span>
-                <h3 style={styles.productName}>{item.name}</h3>
-                <div style={styles.priceTag}>₹{item.price}</div>
+              <div style={styles.shopInfo}>
+                <span style={styles.shopBadge}>{item.shop}</span>
+                {isBest && <span style={{ color: '#2ecc71', fontSize: '0.8rem', fontWeight: 'bold' }}>Save ₹{Math.max(...prices) - minPrice}</span>}
+              </div>
+
+              <h3 style={styles.title}>{item.name}</h3>
+
+              <div style={styles.priceRow}>
+                <span style={styles.currency}>₹</span>
+                <span style={styles.amount}>{item.price}</span>
               </div>
 
               <button
-                style={styles.addToCartBtn}
+                style={styles.btn}
                 onClick={() => addToCart(item)}
-                onMouseOver={(e) => (e.target.style.opacity = "0.8")}
-                onMouseOut={(e) => (e.target.style.opacity = "1")}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#333"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "#1a1a1a"}
               >
                 Add to Cart
               </button>
@@ -153,11 +232,8 @@ function Results() {
       </div>
 
       {products.length > 0 && (
-        <button
-          style={styles.checkoutFab}
-          onClick={() => navigate("/checkout")}
-        >
-          Proceed to Checkout 🛒
+        <button style={styles.checkoutBtn} onClick={() => navigate("/checkout")}>
+          View Cart & Checkout 🛒
         </button>
       )}
     </div>

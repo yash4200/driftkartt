@@ -6,150 +6,94 @@ function Checkout() {
   const { cart, setCart } = useContext(CartContext);
   const navigate = useNavigate();
 
-  // Total price calculate karne ke liye
   const totalPrice = cart.reduce((acc, item) => acc + Number(item.price), 0);
 
   const handlePlaceOrder = (e) => {
     e.preventDefault();
-    if (cart.length === 0) return alert("Your cart is empty!");
-
-    // Order place hone par cart khali kar dena
+    if (cart.length === 0) return;
     setCart([]);
     navigate("/success");
   };
 
   const styles = {
     wrapper: {
-      padding: "40px 5%",
-      maxWidth: "1100px",
+      padding: "60px 8%",
+      maxWidth: "1200px",
       margin: "0 auto",
-      fontFamily: "'Inter', sans-serif",
+      fontFamily: "'Poppins', sans-serif",
       display: "grid",
-      gridTemplateColumns: "1.5fr 1fr",
-      gap: "40px",
-      backgroundColor: "#f8f9fa",
-      minHeight: "100vh",
-    },
-    sectionTitle: {
-      fontSize: "1.5rem",
-      fontWeight: "700",
-      marginBottom: "20px",
-      color: "#2d3436",
+      gridTemplateColumns: "1.2fr 0.8fr",
+      gap: "50px",
+      background: "#fdfdfd",
     },
     card: {
-      backgroundColor: "white",
-      padding: "30px",
-      borderRadius: "20px",
-      boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
+      background: "white",
+      padding: "35px",
+      borderRadius: "24px",
+      boxShadow: "0 10px 30px rgba(0,0,0,0.03)",
+      border: "1px solid #f1f1f1",
     },
-    cartItem: {
+    item: {
       display: "flex",
       justifyContent: "space-between",
-      alignItems: "center",
-      padding: "15px 0",
-      borderBottom: "1px solid #eee",
+      padding: "20px 0",
+      borderBottom: "1px dashed #ddd",
     },
     input: {
       width: "100%",
-      padding: "12px",
-      marginBottom: "15px",
-      borderRadius: "8px",
-      border: "1px solid #dfe6e9",
-      boxSizing: "border-box",
-      fontSize: "1rem",
-    },
-    totalRow: {
-      display: "flex",
-      justifyContent: "space-between",
-      marginTop: "20px",
-      paddingTop: "20px",
-      borderTop: "2px solid #2d3436",
-      fontSize: "1.2rem",
-      fontWeight: "800",
-    },
-    orderBtn: {
-      width: "100%",
-      padding: "16px",
-      backgroundColor: "#00b894",
-      color: "white",
-      border: "none",
+      padding: "14px",
+      marginBottom: "20px",
       borderRadius: "12px",
-      fontSize: "1.1rem",
-      fontWeight: "700",
-      cursor: "pointer",
-      marginTop: "20px",
-      transition: "background 0.3s ease",
+      border: "1px solid #eee",
+      fontSize: "0.95rem",
+      backgroundColor: "#f9f9f9",
     },
-    emptyState: {
+    totalBox: {
+      marginTop: "30px",
+      padding: "20px",
+      backgroundColor: "#1a1a1a",
+      color: "white",
+      borderRadius: "15px",
       textAlign: "center",
-      padding: "100px 20px",
-      gridColumn: "1 / -1",
     }
   };
 
-  // Agar cart khali hai
-  if (cart.length === 0) {
-    return (
-      <div style={styles.emptyState}>
-        <h2>Your cart is empty 🛍️</h2>
-        <p>Go back and find some amazing deals!</p>
-        <button
-          onClick={() => navigate("/")}
-          style={{ ...styles.orderBtn, width: "auto", padding: "12px 30px" }}
-        >
-          Return to Home
-        </button>
-      </div>
-    );
-  }
+  if (cart.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '100px' }}>
+      <h1>Your Cart is Empty 🛒</h1>
+      <button onClick={() => navigate("/")} style={{ padding: '12px 30px', borderRadius: '10px', cursor: 'pointer' }}>Go Shopping</button>
+    </div>
+  );
 
   return (
     <div style={styles.wrapper}>
-      {/* Left Side: Order Details */}
       <div>
-        <h2 style={styles.sectionTitle}>Order Summary</h2>
+        <h2 style={{ fontWeight: '800', marginBottom: '30px' }}>Order Summary</h2>
         <div style={styles.card}>
-          {cart.map((item, index) => (
-            <div key={index} style={styles.cartItem}>
+          {cart.map((item, i) => (
+            <div key={i} style={styles.item}>
               <div>
-                <div style={{ fontWeight: "600" }}>{item.name}</div>
-                <div style={{ fontSize: "0.85rem", color: "#636e72" }}>{item.shop}</div>
+                <strong style={{ fontSize: '1.1rem' }}>{item.name}</strong>
+                <p style={{ margin: '5px 0', color: '#636e72' }}>{item.shop}</p>
               </div>
-              <div style={{ fontWeight: "700" }}>₹{item.price}</div>
+              <span style={{ fontWeight: '700', color: '#0984e3' }}>₹{item.price}</span>
             </div>
           ))}
-
-          <div style={styles.totalRow}>
-            <span>Total Amount</span>
-            <span>₹{totalPrice}</span>
+          <div style={styles.totalBox}>
+            <span style={{ fontSize: '1.1rem', opacity: '0.8' }}>Grand Total: </span>
+            <span style={{ fontSize: '1.8rem', fontWeight: '900', marginLeft: '10px' }}>₹{totalPrice}</span>
           </div>
         </div>
       </div>
 
-      {/* Right Side: Shipping Form */}
       <div>
-        <h2 style={styles.sectionTitle}>Shipping Details</h2>
+        <h2 style={{ fontWeight: '800', marginBottom: '30px' }}>Delivery Info</h2>
         <form style={styles.card} onSubmit={handlePlaceOrder}>
-          <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem", color: "#636e72" }}>Full Name</label>
-          <input type="text" placeholder="John Doe" style={styles.input} required />
-
-          <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem", color: "#636e72" }}>Phone Number</label>
-          <input type="tel" placeholder="+91 98765 43210" style={styles.input} required />
-
-          <label style={{ display: "block", marginBottom: "5px", fontSize: "0.9rem", color: "#636e72" }}>Delivery Address</label>
-          <textarea
-            placeholder="Street name, Landmark, City..."
-            style={{ ...styles.input, height: "100px", resize: "none" }}
-            required
-          />
-
-          <button
-            type="submit"
-            style={styles.orderBtn}
-            onMouseOver={(e) => (e.target.style.backgroundColor = "#00947a")}
-            onMouseOut={(e) => (e.target.style.backgroundColor = "#00b894")}
-          >
-            Confirm Order
+          <input type="text" placeholder="Full Name" style={styles.input} required />
+          <input type="tel" placeholder="Mobile Number" style={styles.input} required />
+          <textarea placeholder="Full Address" style={{ ...styles.input, height: '120px' }} required />
+          <button type="submit" style={{ width: '100%', padding: '18px', background: '#00b894', color: 'white', border: 'none', borderRadius: '15px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer' }}>
+            Place Order Now 🛍️
           </button>
         </form>
       </div>

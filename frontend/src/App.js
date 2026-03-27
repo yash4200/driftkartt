@@ -1,6 +1,5 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-// FIX: Folder name small 'context' rakha hai as per industry standard
 import { CartProvider } from "./context/CartContext";
 
 import Home from "./pages/Home";
@@ -13,27 +12,27 @@ const Navbar = () => (
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "15px 5%",
-    backgroundColor: "white",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+    padding: "15px 8%",
+    backgroundColor: "rgba(255,255,255,0.8)",
+    backdropFilter: "blur(10px)",
     position: "sticky",
     top: 0,
     zIndex: 1000,
-    fontFamily: "'Inter', sans-serif"
+    borderBottom: "1px solid #eee"
   }}>
-    <Link to="/" style={{ textDecoration: "none", fontSize: "1.5rem", fontWeight: "bold", color: "#2d3436" }}>
+    <Link to="/" style={{ textDecoration: "none", fontSize: "1.6rem", fontWeight: "900", color: "#1a1a1a" }}>
       🛒 <span style={{ color: "#0984e3" }}>Drift</span>Kart
     </Link>
-    <div style={{ display: "flex", gap: "25px" }}>
-      <Link to="/" style={{ textDecoration: "none", color: "#636e72", fontWeight: "500" }}>Home</Link>
+    <div style={{ display: "flex", gap: "30px", alignItems: "center" }}>
+      <Link to="/" style={{ textDecoration: "none", color: "#2d3436", fontWeight: "600" }}>Home</Link>
       <Link to="/checkout" style={{
         textDecoration: "none",
         color: "white",
-        backgroundColor: "#2d3436",
-        padding: "8px 16px",
-        borderRadius: "8px",
-        fontWeight: "500",
-        fontSize: "0.9rem"
+        backgroundColor: "#1a1a1a",
+        padding: "10px 22px",
+        borderRadius: "12px",
+        fontWeight: "600",
+        transition: "all 0.3s ease"
       }}>
         Cart 🛍️
       </Link>
@@ -46,11 +45,7 @@ function App() {
     <CartProvider>
       <Router>
         <Navbar />
-        <main style={{
-          minHeight: "calc(100vh - 140px)",
-          background: "#f8f9fa",
-          paddingBottom: "40px"
-        }}>
+        <main style={{ minHeight: "80vh" }}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/results" element={<Results />} />
@@ -58,15 +53,8 @@ function App() {
             <Route path="/success" element={<Success />} />
           </Routes>
         </main>
-        <footer style={{
-          textAlign: "center",
-          padding: "30px",
-          color: "#b2bec3",
-          fontSize: "0.85rem",
-          borderTop: "1px solid #eee",
-          backgroundColor: "white"
-        }}>
-          © 2026 DriftKart • Comparing Local Prices for You
+        <footer style={{ textAlign: "center", padding: "40px", color: "#636e72", borderTop: "1px solid #eee" }}>
+          © 2026 <strong>DriftKart</strong> • Built for smart shoppers
         </footer>
       </Router>
     </CartProvider>

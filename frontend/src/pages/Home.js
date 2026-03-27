@@ -6,98 +6,91 @@ function Home() {
   const navigate = useNavigate();
 
   const handleSearch = (e) => {
-    e.preventDefault(); // Form submit handle karne ke liye
+    e.preventDefault();
     if (search.trim()) {
       navigate(`/results?q=${search}`);
     }
   };
 
-  // Inline Styles (Modern CSS approach)
   const styles = {
     container: {
-      minHeight: "100vh",
+      minHeight: "90vh",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
-      fontFamily: "'Inter', sans-serif",
-      color: "#2d3436",
+      background: "radial-gradient(circle at top right, #eef2f3, #8e9eab)",
+      fontFamily: "'Poppins', sans-serif",
     },
     card: {
-      background: "rgba(255, 255, 255, 0.9)",
-      padding: "40px",
-      borderRadius: "24px",
-      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+      background: "rgba(255, 255, 255, 0.85)",
+      padding: "60px 40px",
+      borderRadius: "30px",
+      boxShadow: "0 20px 50px rgba(0,0,0,0.1)",
       textAlign: "center",
       width: "90%",
-      maxWidth: "450px",
-      backdropFilter: "blur(10px)",
+      maxWidth: "500px",
+      backdropFilter: "blur(15px)",
+      border: "1px solid rgba(255,255,255,0.3)",
+      animation: "fadeIn 1s ease-out",
     },
-    title: {
-      fontSize: "2.5rem",
-      marginBottom: "8px",
-      fontWeight: "800",
-      letterSpacing: "-1px",
+    logo: {
+      fontSize: "3.5rem",
+      marginBottom: "10px",
+      fontWeight: "900",
+      background: "linear-gradient(to right, #0984e3, #00b894)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
     },
     subtitle: {
       color: "#636e72",
-      marginBottom: "30px",
-      fontSize: "1.1rem",
-    },
-    inputGroup: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "15px",
+      marginBottom: "40px",
+      fontSize: "1.2rem",
+      fontWeight: "400",
     },
     input: {
-      padding: "15px 20px",
-      borderRadius: "12px",
-      border: "2px solid #dfe6e9",
-      fontSize: "1rem",
+      padding: "18px 25px",
+      borderRadius: "15px",
+      border: "2px solid #eee",
+      fontSize: "1.1rem",
       outline: "none",
-      transition: "border-color 0.3s ease",
       width: "100%",
       boxSizing: "border-box",
+      transition: "all 0.3s ease",
+      marginBottom: "20px",
     },
     button: {
-      padding: "15px",
-      borderRadius: "12px",
+      width: "100%",
+      padding: "18px",
+      borderRadius: "15px",
       border: "none",
-      backgroundColor: "#0984e3",
+      background: "linear-gradient(45deg, #0984e3, #074fa1)",
       color: "white",
-      fontSize: "1rem",
-      fontWeight: "600",
+      fontSize: "1.1rem",
+      fontWeight: "700",
       cursor: "pointer",
-      transition: "transform 0.2s, background-color 0.2s",
-      boxShadow: "0 4px 12px rgba(9, 132, 227, 0.3)",
+      boxShadow: "0 10px 20px rgba(9, 132, 227, 0.3)",
+      transition: "transform 0.2s ease",
     }
   };
 
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <div style={styles.title}>🛒 DriftKart</div>
-        <p style={styles.subtitle}>Smart local price comparison</p>
-
-        <form onSubmit={handleSearch} style={styles.inputGroup}>
+        <div style={styles.logo}>DriftKart</div>
+        <p style={styles.subtitle}>Stop Overpaying. Start Comparing.</p>
+        <form onSubmit={handleSearch}>
           <input
             type="text"
-            placeholder="Search for products, brands..."
+            placeholder="What are you looking for today?"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={styles.input}
             onFocus={(e) => (e.target.style.borderColor = "#0984e3")}
-            onBlur={(e) => (e.target.style.borderColor = "#dfe6e9")}
+            onBlur={(e) => (e.target.style.borderColor = "#eee")}
           />
-
-          <button
-            type="submit"
-            style={styles.button}
-            onMouseOver={(e) => (e.target.style.backgroundColor = "#074fa1")}
-            onMouseOut={(e) => (e.target.style.backgroundColor = "#0984e3")}
-          >
-            Find Best Deals
+          <button type="submit" style={styles.button}>
+            Find Best Deals 🚀
           </button>
         </form>
       </div>
