@@ -1,27 +1,46 @@
 const express = require("express");
 const cors = require("cors");
+const connectDB = require("./db");
+const Product = require("./models/Product");
 
 const app = express();
+
 app.use(cors());
+app.use(express.json());
 
-const products = [
-  { name: "Milk", price: 50, shop: "Shop A" },
-  { name: "Milk", price: 45, shop: "Shop B" },
-  { name: "Milk", price: 48, shop: "Shop C" },
-  { name: "Bread", price: 30, shop: "Shop D" },
-  { name: "Eggs", price: 60, shop: "Shop E" }
-];
+// ✅ Connect MongoDB
+connectDB();
 
-app.get("/products", (req, res) => {
+// ✅ GET products (search)
+app.get("/products", async (req, res) => {
   const query = req.query.query?.toLowerCase();
 
-  const filtered = query
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(query)
-      )
-    : products;
+  try {
+    let products;
 
-  res.json(filtered);
+    if (query) {
+      products = await Product.find({
+        name: { $regex: query, $options: "i" }
+      });
+    } else {
+      products = await Product.find();
+    }
+
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// ✅ ADD product (for testing)
+app.post("/add-product", async (req, res) => {
+  try {
+    const product = new Product(req.body);
+    await product.save();
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ error: "Error saving product" });
+  }
 });
 
 app.listen(5000, () => {

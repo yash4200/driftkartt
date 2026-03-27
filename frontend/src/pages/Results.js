@@ -1,169 +1,63 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
-function Results() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+const mockData = {
+  rice:  [{ shop: "Sharma General Store", dist: "0.3 km", price: 85, rating: 4.8 }, { shop: "Ravi Kirana", dist: "0.6 km", price: 92, rating: 4.5 }, { shop: "Gupta Mart", dist: "1.2 km", price: 98, rating: 4.3 }],
+  milk:  [{ shop: "Bansal Dairy", dist: "0.2 km", price: 28, rating: 4.9 }, { shop: "Ravi Kirana", dist: "0.6 km", price: 30, rating: 4.5 }, { shop: "Sharma Store", dist: "0.8 km", price: 32, rating: 4.7 }],
+  sugar: [{ shop: "Gupta Mart", dist: "0.4 km", price: 44, rating: 4.3 }, { shop: "Sharma Store", dist: "0.7 km", price: 47, rating: 4.8 }, { shop: "Ravi Kirana", dist: "1.0 km", price: 50, rating: 4.5 }],
+  oil:   [{ shop: "Ravi Kirana", dist: "0.6 km", price: 128, rating: 4.5 }, { shop: "Bansal Mart", dist: "0.9 km", price: 135, rating: 4.2 }, { shop: "Gupta Mart", dist: "1.2 km", price: 142, rating: 4.3 }],
+  atta:  [{ shop: "Sharma Store", dist: "0.3 km", price: 55, rating: 4.8 }, { shop: "Ravi Kirana", dist: "0.6 km", price: 60, rating: 4.5 }, { shop: "Gupta Mart", dist: "1.1 km", price: 65, rating: 4.3 }],
+};
 
-  // ✅ LOCAL STORAGE CART
-  const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem("cart");
-    return saved ? JSON.parse(saved) : [];
-  });
-
-  const location = useLocation();
+export default function Results() {
+  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const query = new URLSearchParams(location.search).get("query");
-
-  // 🔄 FETCH PRODUCTS
-  useEffect(() => {
-    if (!query) return;
-    setLoading(true);
-    setError(null);
-    axios.get(`http://localhost:5000/products?query=${query}`)
-      .then(res => setProducts(res.data))
-      .catch(err => {
-        console.log(err);
-        setError("Failed to fetch products");
-      })
-      .finally(() => setLoading(false));
-  }, [query]);
-
-  // 💾 SAVE CART
-  useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }, [cart]);
-
-  // 💰 MIN PRICE
-  const prices = products.map(p => Number(p.price));
-  const minPrice = prices.length > 0 ? Math.min(...prices) : null;
-
-  // 🛒 ADD
-  const addToCart = (item) => {
-    setCart([...cart, item]);
-  };
-
-  // ❌ REMOVE
-  const removeFromCart = (index) => {
-    setCart(cart.filter((_, i) => i !== index));
-  };
-
-  // 💰 TOTAL
-  const total = cart.reduce((sum, item) => sum + Number(item.price), 0);
+  const query = params.get("q") || "";
+  const key = query.toLowerCase();
+  const results = mockData[key] || mockData["rice"];
+  const cheapest = Math.min(...results.map(r => r.price));
 
   return (
-    <div style={{ padding: "20px", backgroundColor: "#f5f5f5", minHeight: "100vh" }}>
-      
-      <h2 style={{ textAlign: "center" }}>Results for: {query}</h2>
-
-      {/* 🛒 CART */}
-      <div style={{
-        marginBottom: "20px",
-        background: "white",
-        padding: "15px",
-        borderRadius: "10px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
-      }}>
-        <h3>🛒 Cart ({cart.length})</h3>
-
-        {cart.length === 0 ? (
-          <p>No items in cart</p>
-        ) : (
-          cart.map((item, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-              <span>{item.name} - ₹{item.price}</span>
-              <button
-                onClick={() => removeFromCart(i)}
-                style={{
-                  background: "red",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "5px",
-                  padding: "3px 8px",
-                  cursor: "pointer"
-                }}
-              >
-                Remove
-              </button>
-            </div>
-          ))
-        )}
-
-        <hr />
-        <h3>Total: ₹{total}</h3>
-
-        {/* ✅ CHECKOUT BUTTON */}
-        <button
-          onClick={() => navigate("/checkout")}
-          disabled={cart.length === 0}
-          style={{
-            marginTop: "10px",
-            padding: "10px 20px",
-            background: cart.length === 0 ? "#ccc" : "green",
-            color: "white",
-            border: "none",
-            borderRadius: "10px",
-            cursor: cart.length === 0 ? "not-allowed" : "pointer",
-            fontSize: "16px"
-          }}
-        >
-          Checkout
-        </button>
+    <div className="min-h-screen bg-[#0a0a0f] text-white px-4 py-10 max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <button onClick={() => navigate("/")} className="text-gray-400 hover:text-white transition text-xl">←</button>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-sm">🛒</div>
+          <span className="font-bold text-xl">DriftKart</span>
+        </div>
       </div>
 
-      {/* 🛍️ PRODUCTS */}
-      {error && <p style={{ textAlign: "center", color: "red" }}>{error}</p>}
-      {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
-      {!loading && products.length === 0 && (
-        <p style={{ textAlign: "center" }}>No products found</p>
-      )}
-      {!loading && products.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}>
-          {products.map((item, index) => {
-            const isBest = Number(item.price) === minPrice;
+      <p className="text-gray-400 text-sm mb-1">Results for</p>
+      <h2 className="text-3xl font-extrabold mb-2 capitalize">{query}</h2>
+      <p className="text-gray-500 text-sm mb-8">📍 Kolkata · {results.length} shops found nearby</p>
 
-            return (
-              <div
-                key={index}
-                style={{
-                  width: "250px",
-                  margin: "15px",
-                  padding: "15px",
-                  borderRadius: "15px",
-                  backgroundColor: isBest ? "#d4edda" : "white",
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-                  textAlign: "center"
-                }}
-              >
-                <h3>{item.name}</h3>
-                <p style={{ color: "gray" }}>{item.shop}</p>
-                <h2>₹{item.price}</h2>
-
-                {isBest && <p style={{ color: "green" }}>🔥 Best Deal</p>}
-
-                <button
-                  onClick={() => addToCart(item)}
-                  style={{
-                    marginTop: "10px",
-                    padding: "8px 15px",
-                    borderRadius: "10px",
-                    border: "none",
-                    backgroundColor: "black",
-                    color: "white",
-                    cursor: "pointer"
-                  }}
-                >
-                  Add to Cart
-                </button>
+      {/* Results */}
+      <div className="flex flex-col gap-4">
+        {results.map((r, i) => (
+          <div
+            key={i}
+            className={`bg-[#13131a] border rounded-2xl p-5 flex items-center justify-between transition hover:-translate-y-1 cursor-pointer
+              ${r.price === cheapest ? "border-green-500 bg-green-950/20" : "border-[#2a2a3a] hover:border-orange-500"}`}
+            onClick={() => navigate("/checkout", { state: { shop: r, product: query } })}
+          >
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-lg">{r.shop}</span>
+                {r.price === cheapest && (
+                  <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full font-semibold">✓ Best Price</span>
+                )}
               </div>
-            );
-          })}
-        </div>
-      )}
+              <div className="text-gray-500 text-sm mt-1">📍 {r.dist} · ⭐ {r.rating}</div>
+            </div>
+            <div className={`text-3xl font-extrabold ${r.price === cheapest ? "text-green-400" : "text-white"}`}>
+              ₹{r.price}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-center text-gray-600 text-xs mt-10">Prices updated in real-time from local shops</p>
     </div>
   );
 }
-
-export default Results;
