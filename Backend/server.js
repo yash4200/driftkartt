@@ -1,42 +1,36 @@
-const express = require("express");
-const cors = require("cors");
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
 
-const app = express();
+const app = express(); // <--- Yeh define hona zaroori hai
 
-// Middleware
+// Middlewares
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // Taaki frontend ka data backend samajh sake
 
-// Dummy products
-const products = [
-  { name: "Milk", price: 50, shop: "Shop A" },
-  { name: "Milk", price: 45, shop: "Shop B" },
-  { name: "Milk", price: 48, shop: "Shop C" },
-  { name: "Bread", price: 30, shop: "Shop D" },
-  { name: "Eggs", price: 60, shop: "Shop E" }
-];
+// MongoDB Connection Logic
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ Database Connected (Atlas)"))
+  .catch((err) => console.log("❌ DB Error:", err));
 
-// ✅ Home route (optional but useful)
-app.get("/", (req, res) => {
-  res.send("DriftKart Backend Running 🚀");
+// Model Import (Check karna ki file path sahi ho)
+const Order = require('./models/Order');
+
+// API Route: Order save karne ke liye
+app.post('/api/orders', async (req, res) => {
+  try {
+    const newOrder = new Order(req.body);
+    const savedOrder = await newOrder.save();
+    res.status(201).json({ success: true, orderId: savedOrder._id });
+  } catch (error) {
+    console.error("Order Error:", error);
+    res.status(500).json({ success: false, message: "Order failed!" });
+  }
 });
 
-// ✅ Products API (search support)
-app.get("/products", (req, res) => {
-  const query = req.query.query?.toLowerCase();
-
-  const filtered = query
-    ? products.filter(p =>
-        p.name.toLowerCase().includes(query)
-      )
-    : products;
-
-  res.json(filtered);
-});
-
-// ✅ IMPORTANT (Render ke liye)
+// Server Listen
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server is running on port ${PORT}`);
 });
