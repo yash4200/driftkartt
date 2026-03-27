@@ -45,7 +45,7 @@ function Checkout() {
           borderRadius: "10px"
         }}
       >
-        Place Order
+        Place Order  //yasj
       </button>
     </div>
   );
