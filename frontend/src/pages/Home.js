@@ -1,159 +1,125 @@
-/* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [locationName, setLocationName] = useState("Locating...");
-  const [cart, setCart] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeCat, setActiveCat] = useState('All');
+  const [cart, setCart] = useState(JSON.parse(localStorage.getItem('cart')) || []);
   const navigate = useNavigate();
 
-  // 1. Get Real Location
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const res = await axios.get(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
-          setLocationName(`${res.data.city || res.data.locality}`);
-        } catch (err) { setLocationName("India"); }
-      }, () => { setLocationName("Location Off"); });
-    }
+    axios.get("http://localhost:10000/products")
+      .then(res => {
+        setProducts(res.data);
+        setFilteredProducts(res.data);
+      })
+      .catch(err => console.log("Error loading products"));
   }, []);
 
-  // 2. Fetch Products
+  // 🔍 Search & Category Filter Logic
   useEffect(() => {
-    fetchProducts();
-    const savedCart = JSON.parse(localStorage.getItem('cart')) || [];
-    setCart(savedCart);
-  }, []);
-
-  const fetchProducts = async (query = '') => {
-    setLoading(true);
-    try {
-      // API call with query parameter
-      const res = await axios.get(`https://driftkartt.onrender.com/products?query=${query}`);
-      setProducts(res.data);
-    } catch (err) {
-      console.error("Fetch Error:", err);
+    let result = products;
+    if (activeCat !== 'All') {
+      result = result.filter(p => p.category === activeCat);
     }
-    setLoading(false);
-  };
+    if (searchTerm) {
+      result = result.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    setFilteredProducts(result);
+  }, [searchTerm, activeCat, products]);
 
   const addToCart = (product) => {
-    const updatedCart = [...cart, product];
-    setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
+    const newCart = [...cart, product];
+    setCart(newCart);
+    localStorage.setItem('cart', JSON.stringify(newCart));
   };
 
-  const totalPrice = cart.reduce((total, item) => total + Number(item.price), 0);
+  const categories = ['All', 'Grocery', 'Stationery', 'Daily Needs', 'Personal Care'];
 
   return (
-    <div style={styles.page}>
+    <div style={styles.container}>
+      {/* 🏁 Header with Search */}
       <header style={styles.header}>
-        <div style={styles.navMain}>
-          <h1 style={styles.logo} onClick={() => window.location.reload()}>Drift<span>Kart</span></h1>
-          <div style={styles.deliveryInfo}>
-            <span style={{ fontSize: '20px' }}>📍</span>
-            <div>
-              <b style={{ display: 'block', fontSize: '10px', color: '#E23744' }}>DELIVERING TO</b>
-              <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{locationName}</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={styles.searchWrapper}>
+        <h1 style={styles.logo}>Drift<span>Kart</span></h1>
+        <div style={styles.searchBox}>
           <input
             type="text"
-            placeholder="Search for groceries, vegetables..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); fetchProducts(e.target.value); }}
-            style={styles.searchBar}
+            placeholder="Search 'Atta', 'Pen' or 'Milk'..."
+            style={styles.searchInput}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        <button onClick={() => navigate('/checkout')} style={styles.cartBtn}>
+          🛒 Cart ({cart.length})
+        </button>
       </header>
 
-      <main style={styles.main}>
-        <h2 style={styles.sectionTitle}>Fresh Items Near You ⚡</h2>
+      {/* 🏷️ Category Strip */}
+      <div style={styles.categoryStrip}>
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setActiveCat(cat)}
+            style={activeCat === cat ? styles.catBtnActive : styles.catBtn}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
 
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '50px', fontSize: '18px', color: '#666' }}>
-            Searching fresh products...
-          </div>
-        ) : (
-          <div style={styles.grid}>
-            {products.map((item) => (
-              <div key={item._id} style={styles.card}>
-                <div style={styles.imageBox}>
-                  <img
-                    src={`https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400&q=${item.name}`}
-                    alt={item.name}
-                    style={styles.img}
-                    onError={(e) => { e.target.src = "https://images.unsplash.com/photo-1506617424151-74f5699c4463?q=80&w=400" }}
-                  />
-                  <div style={styles.timeTag}>10-15 MINS</div>
+      {/* 🛍️ Product Grid */}
+      <main style={styles.grid}>
+        {filteredProducts.length > 0 ? filteredProducts.map(p => (
+          <div key={p._id} style={styles.card}>
+            <div style={styles.imageBox}>
+              <img src={p.image || 'https://via.placeholder.com/150'} alt={p.name} style={styles.img} />
+            </div>
+            <div style={styles.details}>
+              <p style={styles.shopTag}>🏪 {p.shopName || "Local Store"}</p>
+              <h4 style={styles.title}>{p.name}</h4>
+              <div style={styles.priceRow}>
+                <div>
+                  <span style={styles.price}>₹{p.price}</span>
+                  <span style={styles.mrp}>₹{p.originalPrice}</span>
                 </div>
-
-                <div style={styles.details}>
-                  <h4 style={styles.name}>{item.name}</h4>
-                  <p style={styles.store}>{item.storeName} • {item.distance}</p>
-                  <div style={styles.footer}>
-                    <span style={styles.price}>₹{item.price}</span>
-                    <button onClick={() => addToCart(item)} style={styles.addBtn}>ADD +</button>
-                  </div>
-                </div>
+                <button onClick={() => addToCart(p)} style={styles.addBtn}>ADD</button>
               </div>
-            ))}
+            </div>
+          </div>
+        )) : (
+          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '50px', color: '#888' }}>
+            ❌ No products found for "{searchTerm}"
           </div>
         )}
       </main>
-
-      {/* Floating Cart Strip */}
-      {cart.length > 0 && (
-        <div style={styles.cartStrip} onClick={() => navigate('/checkout')}>
-          <div style={styles.cartInfo}>
-            <span>{cart.length} ITEM{cart.length > 1 ? 'S' : ''} ADDED</span>
-            <p style={{ margin: 0, fontWeight: 'bold' }}>₹{totalPrice} plus taxes</p>
-          </div>
-          <div style={styles.viewCart}>View Cart 🛒</div>
-        </div>
-      )}
     </div>
   );
 };
 
 const styles = {
-  page: { backgroundColor: '#fff', minHeight: '100vh', fontFamily: 'Inter, sans-serif', paddingBottom: '80px' },
-  header: { padding: '15px 20px', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 1000, boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
-  navMain: { display: 'flex', alignItems: 'center', gap: '30px', maxWidth: '1200px', margin: '0 auto' },
-  logo: { fontSize: '26px', color: '#E23744', fontWeight: '900', cursor: 'pointer' },
-  deliveryInfo: { display: 'flex', alignItems: 'center', gap: '8px', borderLeft: '1px solid #ddd', paddingLeft: '15px' },
-  searchWrapper: { maxWidth: '700px', margin: '15px auto 0' },
-  searchBar: { width: '100%', padding: '12px 20px', borderRadius: '10px', border: '1px solid #eee', backgroundColor: '#F3F3F3', outline: 'none' },
-  main: { maxWidth: '1200px', margin: '0 auto', padding: '20px' },
-  sectionTitle: { fontSize: '20px', fontWeight: '800', marginBottom: '20px' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '25px' },
-  card: { borderRadius: '15px', overflow: 'hidden' },
-  imageBox: { position: 'relative', height: '160px', borderRadius: '15px', overflow: 'hidden', backgroundColor: '#f9f9f9' },
-  img: { width: '100%', height: '100%', objectFit: 'cover' },
-  timeTag: { position: 'absolute', bottom: '8px', left: '8px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' },
-  details: { padding: '8px 2px' },
-  name: { margin: '0', fontSize: '16px', fontWeight: '700' },
-  store: { color: '#777', fontSize: '12px', margin: '4px 0' },
-  footer: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  price: { fontSize: '16px', fontWeight: '800' },
-  addBtn: { backgroundColor: '#fff', color: '#E23744', border: '1px solid #E23744', padding: '4px 18px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' },
-  cartStrip: {
-    position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
-    width: '90%', maxWidth: '500px', backgroundColor: '#60B246', color: 'white',
-    padding: '12px 20px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', cursor: 'pointer', boxShadow: '0 10px 20px rgba(0,0,0,0.2)', zIndex: 2000
-  },
-  cartInfo: { fontSize: '13px' },
-  viewCart: { fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '5px' }
+  container: { backgroundColor: '#F8F9FA', minHeight: '100vh', fontFamily: 'Inter, sans-serif' },
+  header: { padding: '15px 20px', backgroundColor: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #eee', gap: '15px' },
+  logo: { fontSize: '20px', fontWeight: '900', margin: 0, color: '#1A1A1A' },
+  searchBox: { flex: 1, maxWidth: '500px' },
+  searchInput: { width: '100%', padding: '12px 20px', borderRadius: '12px', border: '1px solid #eee', backgroundColor: '#F3F4F6', outline: 'none', fontSize: '14px' },
+  cartBtn: { backgroundColor: '#E23744', color: '#fff', border: 'none', padding: '10px 15px', borderRadius: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' },
+  categoryStrip: { display: 'flex', gap: '10px', padding: '15px 20px', overflowX: 'auto', backgroundColor: '#fff' },
+  catBtn: { padding: '8px 18px', borderRadius: '20px', border: '1px solid #eee', background: '#fff', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: '600' },
+  catBtnActive: { padding: '8px 18px', borderRadius: '20px', border: '1px solid #E23744', background: '#FFF5F6', color: '#E23744', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: '800' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px', padding: '15px' },
+  card: { backgroundColor: '#fff', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', border: '1px solid #f0f0f0' },
+  imageBox: { height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' },
+  img: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
+  details: { padding: '12px' },
+  shopTag: { fontSize: '10px', color: '#888', margin: '0 0 5px 0', textTransform: 'uppercase', fontWeight: '700' },
+  title: { fontSize: '13px', fontWeight: '700', margin: '0 0 10px 0', height: '32px', overflow: 'hidden' },
+  priceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  price: { fontSize: '15px', fontWeight: '900', color: '#000' },
+  mrp: { fontSize: '11px', color: '#999', textDecoration: 'line-through', marginLeft: '5px' },
+  addBtn: { border: '1px solid #E23744', background: '#fff', color: '#E23744', padding: '5px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: '800', cursor: 'pointer' }
 };
 
 export default Home;

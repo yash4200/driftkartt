@@ -1,104 +1,122 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+require('dotenv').config(); // Taaki aap .env file use kar saken
 
 const app = express();
 
-// 1. Middlewares
-app.use(cors());
+// --- 🛠️ MIDDLEWARES ---
 app.use(express.json());
+app.use(cors({ origin: "*" })); // Live frontend ko allow karne ke liye
 
-// 2. MongoDB Connection
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://driftkartt:Yash12345@driftkart.okfymoi.mongodb.net/driftkart?retryWrites=true&w=majority&appName=driftkart";
+// --- 🌐 DATABASE CONNECTION ---
+// Yahan apna MongoDB Atlas wala link dalo (Agar .env use kar rahe ho toh process.env.MONGO_URI)
+const MONGO_URI = "mongodb+srv://yash:<password>@cluster0.mongodb.net/driftkart";
 
 mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log("✅ Database Connected (Atlas)");
-    console.log("Registered Models:", mongoose.modelNames());
-  })
-  .catch((err) => console.log("❌ DB Error:", err));
+  .then(() => console.log("✅ DriftKart Database Connected (Cloud)!"))
+  .catch(err => console.log("❌ DB Connection Error:", err));
 
-// 3. Models Import
-const Order = require('./models/Order');
-const Product = require('./models/Product');
+// --- 📦 SCHEMAS & MODELS ---
 
-// --- ROUTES ---
-
-// Root Route
-app.get('/', (req, res) => {
-  res.send("DriftKart Backend is Live! 🚀");
+// 1. Product Schema (With Shop Name & Original Price)
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  price: { type: Number, required: true },         // Discounted Price
+  originalPrice: { type: Number },                // MRP (Strikethrough)
+  category: { type: String, required: true },
+  image: { type: String },
+  shopName: { type: String, default: "Local Store" },
+  stock: { type: Number, default: 10 }
 });
 
-// A. Products Fetch/Search Route
+const Product = mongoose.model('Product', productSchema);
+
+// 2. Order Schema (For Admin Panel)
+const orderSchema = new mongoose.Schema({
+  items: Array,
+  total: Number,
+  address: Object,
+  status: { type: String, default: 'Pending' },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Order = mongoose.model('Order', orderSchema);
+
+// --- 🎯 API ROUTES ---
+
+// Health Check (To see if server is alive)
+app.get('/', (req, res) => {
+  res.send("<h1>DriftKart Backend is Live! 🚀</h1>");
+});
+
+// GET: All Products (For Home Page)
 app.get('/products', async (req, res) => {
   try {
-    const { query } = req.query;
-    let filter = {};
-
-    if (query && query !== 'undefined' && query !== '') {
-      // Name mein search karne ke liye Case-Insensitive regex
-      filter = { name: { $regex: query, $options: 'i' } };
-    }
-
-    const products = await Product.find(filter);
-    console.log(`Found ${products.length} products for query: ${query}`);
+    const products = await Product.find().sort({ _id: -1 });
     res.json(products);
-  } catch (error) {
-    console.error("Products Fetch Error:", error);
-    res.status(500).json({ message: "Error fetching products", error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch products" });
   }
 });
 
-// B. Order Placement Route
-app.post('/api/orders', async (req, res) => {
+// POST: Add New Product (From Admin Panel)
+app.post('/products', async (req, res) => {
   try {
-    if (!req.body || Object.keys(req.body).length === 0) {
-      return res.status(400).json({ success: false, message: "Empty order data" });
-    }
-    const newOrder = new Order(req.body);
-    const savedOrder = await newOrder.save();
-    res.status(201).json({ success: true, orderId: savedOrder._id });
-  } catch (error) {
-    console.error("Order Save Error:", error);
-    res.status(500).json({ success: false, message: "Order failed!", error: error.message });
+    const newProduct = new Product(req.body);
+    await newProduct.save();
+    res.status(201).json(newProduct);
+  } catch (err) {
+    res.status(400).json({ error: "Error adding product" });
   }
 });
 
-// C. Admin Route: Add New Product (NEW 🚀)
-app.post('/products/add', async (req, res) => {
+// PUT: Update Product (For Admin Edit)
+app.put('/products/:id', async (req, res) => {
   try {
-    const { name, price, storeName, distance, category, image } = req.body;
-
-    const newProduct = new Product({
-      name,
-      price,
-      storeName,
-      distance: distance || "1.0 km", // Default distance if not provided
-      category: category || "Grocery",
-      image: image || "https://via.placeholder.com/150"
-    });
-
-    const savedProduct = await newProduct.save();
-    res.status(201).json({ success: true, message: "Product added!", product: savedProduct });
-  } catch (error) {
-    console.error("Add Product Error:", error);
-    res.status(500).json({ success: false, message: "Product add nahi hua!", error: error.message });
+    const updatedProduct = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updatedProduct);
+  } catch (err) {
+    res.status(400).json({ error: "Update failed" });
   }
 });
 
-// D. Admin Route: Delete Product (NEW 🚀)
+// DELETE: Remove Product
 app.delete('/products/:id', async (req, res) => {
   try {
     await Product.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: "Product deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: "Delete failed", error: error.message });
+    res.json({ message: "Product deleted successfully" });
+  } catch (err) {
+    res.status(400).json({ error: "Delete failed" });
   }
 });
 
-// 4. Server Listen
-const PORT = process.env.PORT || 10000;
+// GET: All Orders (For Admin View)
+app.get('/orders', async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
+// POST: Place New Order (From Checkout Page)
+app.post('/orders', async (req, res) => {
+  try {
+    const newOrder = new Order(req.body);
+    await newOrder.save();
+    res.status(201).json(newOrder);
+  } catch (err) {
+    res.status(400).json({ error: "Order placement failed" });
+  }
+});
+
+// --- 🚀 SERVER START ---
+const PORT = process.env.PORT || 10000; // Render uses process.env.PORT
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`\n--------------------------------------`);
+  console.log(`🚀 Server running on: http://localhost:${PORT}`);
+  console.log(`📦 DriftKart API is ready for orders!`);
+  console.log(`--------------------------------------\n`);
 });
