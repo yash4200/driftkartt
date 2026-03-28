@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
+const API_URL = "https://driftkart-backend.onrender.com";
 const AdminPanel = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [masterPass, setMasterPass] = useState('');
     const [activeTab, setActiveTab] = useState('inventory');
-
     const [products, setProducts] = useState([]);
     const [orders, setOrders] = useState([]);
-    const [form, setForm] = useState({ name: '', price: '', category: '', image: '', stock: '', isEdit: false, id: null });
+    const [form, setForm] = useState({ name: '', price: '', category: '', image: '', shopName: '', isEdit: false, id: null });
 
     const fetchData = async () => {
         try {
-            const prodRes = await axios.get("http://localhost:10000/products");
-            const orderRes = await axios.get("http://localhost:10000/orders");
+            const prodRes = await axios.get(`${API_URL}/products`);
+            const orderRes = await axios.get(`${API_URL}/orders`);
             setProducts(prodRes.data);
             setOrders(orderRes.data);
-        } catch (err) { console.log("Backend connection error"); }
+        } catch (err) {
+            console.error("Connection Error:", err);
+        }
     };
 
     useEffect(() => {
@@ -32,20 +33,20 @@ const AdminPanel = () => {
         e.preventDefault();
         try {
             if (form.isEdit) {
-                await axios.put(`http://localhost:10000/products/${form.id}`, form);
+                await axios.put(`${API_URL}/products/${form.id}`, form);
                 alert("Updated! ✅");
             } else {
-                await axios.post("http://localhost:10000/products", form);
-                alert("Added! ➕");
+                await axios.post(`${API_URL}/products`, form);
+                alert("Added to DriftKart! ➕");
             }
-            setForm({ name: '', price: '', category: '', image: '', stock: '', isEdit: false });
+            setForm({ name: '', price: '', category: '', image: '', shopName: '', isEdit: false });
             fetchData();
-        } catch (err) { alert("Error saving data"); }
+        } catch (err) { alert("Server Error: Could not save."); }
     };
 
     const deleteProduct = async (id) => {
         if (window.confirm("Delete this product?")) {
-            await axios.delete(`http://localhost:10000/products/${id}`);
+            await axios.delete(`${API_URL}/products/${id}`);
             fetchData();
         }
     };
@@ -55,8 +56,9 @@ const AdminPanel = () => {
             <div style={styles.loginOverlay}>
                 <div style={styles.loginBox}>
                     <h1 style={styles.logo}>Drift<span>Panel</span></h1>
-                    <input type="password" placeholder="Master Password" style={styles.input} onChange={(e) => setMasterPass(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleLogin()} />
-                    <button onClick={handleLogin} style={styles.mainBtn}>Unlock Access</button>
+                    <p style={{ fontSize: '12px', color: '#888', marginBottom: '20px' }}>Authorized Personnel Only</p>
+                    <input type="password" placeholder="Enter Master Key" style={styles.input} onChange={(e) => setMasterPass(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleLogin()} />
+                    <button onClick={handleLogin} style={styles.mainBtn}>Unlock Dashboard</button>
                 </div>
             </div>
         );
@@ -68,7 +70,7 @@ const AdminPanel = () => {
                 <h1 style={styles.logo}>Drift<span>Kart</span> Admin</h1>
                 <div style={styles.tabGroup}>
                     <button onClick={() => setActiveTab('inventory')} style={activeTab === 'inventory' ? styles.activeTab : styles.tab}>Inventory</button>
-                    <button onClick={() => setActiveTab('orders')} style={activeTab === 'orders' ? styles.activeTab : styles.tab}>Live Orders ({orders.length})</button>
+                    <button onClick={() => setActiveTab('orders')} style={activeTab === 'orders' ? styles.activeTab : styles.tab}>Orders ({orders.length})</button>
                     <button onClick={() => setIsAuthenticated(false)} style={styles.logoutBtn}>Logout</button>
                 </div>
             </header>
@@ -77,23 +79,27 @@ const AdminPanel = () => {
                 {activeTab === 'inventory' ? (
                     <>
                         <div style={styles.card}>
-                            <h3 style={{ marginTop: 0 }}>{form.isEdit ? '✏️ Edit Item' : '➕ Add New Item'}</h3>
+                            <h3 style={{ marginTop: 0 }}>{form.isEdit ? '✏️ Edit Product' : '➕ Add Product'}</h3>
                             <form onSubmit={handleSubmit} style={styles.formGrid}>
                                 <input placeholder="Product Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={styles.input} required />
-                                <input placeholder="Price (₹)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} style={styles.input} required />
-                                <input placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={styles.input} required />
-                                <input placeholder="Image Link (URL)" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} style={styles.input} />
-                                <button type="submit" style={styles.addBtn}>{form.isEdit ? 'Update Product' : 'Save to Stock'}</button>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <input placeholder="Price (₹)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} style={{ ...styles.input, flex: 1 }} required />
+                                    <input placeholder="Shop Name" value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} style={{ ...styles.input, flex: 1 }} required />
+                                </div>
+                                <input placeholder="Category (Grocery, Stationery...)" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={styles.input} required />
+                                <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} style={styles.input} />
+                                <button type="submit" style={styles.addBtn}>{form.isEdit ? 'Update Now' : 'Add to Shop'}</button>
                             </form>
                         </div>
 
                         <div style={styles.listContainer}>
+                            <h3 style={styles.sectionTitle}>Current Stock ({products.length})</h3>
                             {products.map(p => (
                                 <div key={p._id} style={styles.itemRow}>
-                                    <img src={p.image || 'https://via.placeholder.com/50'} alt={p.name} style={styles.thumb} />
+                                    <img src={p.image || 'https://via.placeholder.com/50'} alt="" style={styles.thumb} />
                                     <div style={{ flex: 1, marginLeft: '15px' }}>
                                         <div style={{ fontWeight: '800' }}>{p.name}</div>
-                                        <div style={{ fontSize: '12px', color: '#666' }}>₹{p.price} • {p.category}</div>
+                                        <div style={{ fontSize: '12px', color: '#666' }}>₹{p.price} • {p.shopName}</div>
                                     </div>
                                     <button onClick={() => setForm({ ...p, isEdit: true, id: p._id })} style={styles.iconBtn}>✏️</button>
                                     <button onClick={() => deleteProduct(p._id)} style={styles.iconBtn}>🗑️</button>
@@ -103,59 +109,56 @@ const AdminPanel = () => {
                     </>
                 ) : (
                     <div style={styles.ordersList}>
-                        {orders.map(o => (
+                        <h3 style={styles.sectionTitle}>Live Orders</h3>
+                        {orders.length > 0 ? orders.map(o => (
                             <div key={o._id} style={styles.orderCard}>
                                 <div style={styles.orderHeader}>
-                                    <strong>ORDER #{o._id.slice(-5).toUpperCase()}</strong>
-                                    <span style={styles.statusBadge}>NEW</span>
+                                    <strong>ID: #{o._id.slice(-5).toUpperCase()}</strong>
+                                    <span style={styles.statusBadge}>NEW ORDER</span>
                                 </div>
-                                <div style={styles.orderContent}>
-                                    <div style={{ marginBottom: '10px' }}>📍 <strong>Address:</strong> {o.address.house}, {o.address.area}</div>
-                                    <div style={styles.orderItemsList}>
-                                        {o.items.map((item, idx) => (
-                                            <div key={idx} style={styles.miniItem}>
-                                                <img src={item.image} style={styles.miniThumb} alt="" />
-                                                <span>{item.name} (x1)</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div style={styles.orderTotal}>Total Bill: ₹{o.total}</div>
+                                <div style={{ fontSize: '13px', marginBottom: '10px' }}>
+                                    📍 <strong>Deliver to:</strong> {o.address?.house}, {o.address?.area} ({o.address?.type})
                                 </div>
+                                <div style={styles.orderItemsList}>
+                                    {o.items?.map((item, idx) => (
+                                        <div key={idx} style={styles.miniItem}>• {item.name} - ₹{item.price}</div>
+                                    ))}
+                                </div>
+                                <div style={styles.orderTotal}>Total: ₹{o.total}</div>
                             </div>
-                        ))}
+                        )) : <p style={{ textAlign: 'center', color: '#999' }}>No orders yet.</p>}
                     </div>
                 )}
             </main>
         </div>
     );
 };
-
 const styles = {
-    dashboard: { fontFamily: 'Inter, sans-serif', backgroundColor: '#F4F4F4', minHeight: '100vh' },
-    header: { backgroundColor: '#fff', padding: '15px 30px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
-    logo: { fontSize: '22px', fontWeight: '900', margin: 0 },
-    tabGroup: { display: 'flex', gap: '10px' },
-    tab: { padding: '8px 15px', border: 'none', cursor: 'pointer', fontWeight: '700', borderRadius: '8px', background: '#eee' },
-    activeTab: { padding: '8px 15px', border: 'none', cursor: 'pointer', fontWeight: '700', borderRadius: '8px', background: '#E23744', color: '#fff' },
-    container: { padding: '20px', maxWidth: '800px', margin: '0 auto' },
-    card: { backgroundColor: '#fff', padding: '20px', borderRadius: '20px', marginBottom: '20px' },
-    formGrid: { display: 'flex', flexDirection: 'column', gap: '10px' },
-    input: { padding: '12px', border: '1px solid #eee', borderRadius: '10px', outline: 'none' },
-    addBtn: { padding: '15px', backgroundColor: '#1A1A1A', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' },
-    itemRow: { backgroundColor: '#fff', padding: '12px', borderRadius: '15px', display: 'flex', alignItems: 'center', marginBottom: '10px', border: '1px solid #eee' },
-    thumb: { width: '50px', height: '50px', borderRadius: '10px', objectFit: 'cover', border: '1px solid #f0f0f0' },
-    iconBtn: { padding: '10px', border: 'none', background: '#f9f9f9', borderRadius: '8px', marginLeft: '5px', cursor: 'pointer' },
-    orderCard: { backgroundColor: '#fff', padding: '20px', borderRadius: '20px', marginBottom: '15px', borderLeft: '6px solid #E23744' },
-    orderHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #f0f0f0', paddingBottom: '10px' },
-    statusBadge: { backgroundColor: '#FFF5F6', color: '#E23744', padding: '4px 8px', borderRadius: '5px', fontSize: '10px', fontWeight: '900' },
-    orderItemsList: { display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' },
-    miniItem: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px' },
-    miniThumb: { width: '30px', height: '30px', borderRadius: '5px', objectFit: 'cover' },
-    orderTotal: { fontSize: '18px', fontWeight: '900', color: '#1A1A1A' },
-    loginOverlay: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#1A1A1A' },
-    loginBox: { padding: '40px', background: '#fff', borderRadius: '30px', textAlign: 'center', width: '320px' },
-    mainBtn: { width: '100%', padding: '15px', background: '#E23744', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 'bold', marginTop: '15px' },
-    logoutBtn: { background: '#f0f0f0', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }
+    dashboard: { fontFamily: "'Inter', sans-serif", backgroundColor: '#F8F9FA', minHeight: '100vh' },
+    header: { backgroundColor: '#fff', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' },
+    logo: { fontSize: '20px', fontWeight: '900', margin: 0 },
+    tabGroup: { display: 'flex', gap: '10px', alignItems: 'center' },
+    tab: { padding: '8px 16px', border: 'none', cursor: 'pointer', fontWeight: '700', borderRadius: '10px', background: '#f0f0f0' },
+    activeTab: { padding: '8px 16px', border: 'none', cursor: 'pointer', fontWeight: '700', borderRadius: '10px', background: '#E23744', color: '#fff' },
+    container: { padding: '20px', maxWidth: '700px', margin: '0 auto' },
+    card: { backgroundColor: '#fff', padding: '25px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '25px' },
+    formGrid: { display: 'flex', flexDirection: 'column', gap: '12px' },
+    input: { padding: '14px', border: '1px solid #eee', borderRadius: '12px', outline: 'none', backgroundColor: '#F9F9F9' },
+    addBtn: { padding: '16px', backgroundColor: '#1A1A1A', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', marginTop: '10px' },
+    itemRow: { backgroundColor: '#fff', padding: '12px 18px', borderRadius: '18px', display: 'flex', alignItems: 'center', marginBottom: '10px', border: '1px solid #f0f0f0' },
+    thumb: { width: '45px', height: '45px', borderRadius: '10px', objectFit: 'cover' },
+    iconBtn: { padding: '8px', border: 'none', background: '#f5f5f5', borderRadius: '8px', marginLeft: '8px', cursor: 'pointer' },
+    sectionTitle: { fontSize: '18px', fontWeight: '800', marginBottom: '15px', color: '#333' },
+    orderCard: { backgroundColor: '#fff', padding: '20px', borderRadius: '20px', marginBottom: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '5px solid #E23744' },
+    orderHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '12px' },
+    statusBadge: { backgroundColor: '#FFF5F6', color: '#E23744', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '900' },
+    orderItemsList: { padding: '10px 0', borderTop: '1px solid #f9f9f9', borderBottom: '1px solid #f9f9f9', marginBottom: '10px' },
+    miniItem: { fontSize: '14px', color: '#555', marginBottom: '4px' },
+    orderTotal: { fontSize: '18px', fontWeight: '900' },
+    loginOverlay: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#111' },
+    loginBox: { padding: '40px', background: '#fff', borderRadius: '32px', textAlign: 'center', width: '340px' },
+    mainBtn: { width: '100%', padding: '16px', background: '#E23744', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: '800', marginTop: '15px', cursor: 'pointer' },
+    logoutBtn: { background: 'none', border: '1px solid #eee', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '12px' }
 };
 
 export default AdminPanel;
