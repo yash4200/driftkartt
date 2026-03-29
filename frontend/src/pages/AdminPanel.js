@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-const API_URL = "https://driftkart-backend.onrender.com";
+const API_URL = "https://driftkartt.onrender.com";
 const AdminPanel = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [masterPass, setMasterPass] = useState('');
