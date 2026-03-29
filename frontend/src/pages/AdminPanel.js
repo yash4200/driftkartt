@@ -1,164 +1,121 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-const API_URL = "https://driftkartt.onrender.com";
-const AdminPanel = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [masterPass, setMasterPass] = useState('');
-    const [activeTab, setActiveTab] = useState('inventory');
-    const [products, setProducts] = useState([]);
-    const [orders, setOrders] = useState([]);
-    const [form, setForm] = useState({ name: '', price: '', category: '', image: '', shopName: '', isEdit: false, id: null });
 
-    const fetchData = async () => {
-        try {
-            const prodRes = await axios.get(`${API_URL}/products`);
-            const orderRes = await axios.get(`${API_URL}/orders`);
-            setProducts(prodRes.data);
-            setOrders(orderRes.data);
-        } catch (err) {
-            console.error("Connection Error:", err);
+const API_URL = "https://driftkartt.onrender.com";
+
+const AdminPanel = () => {
+    const [products, setProducts] = useState([]);
+    const [password, setPassword] = useState('');
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [newProduct, setNewProduct] = useState({ name: '', price: '', category: '', image: '', originalPrice: '' });
+
+    const handleLogin = () => {
+        if (password === "DriftBoss786") {
+            setIsLoggedIn(true);
+        } else {
+            alert("Wrong Password! ❌");
         }
     };
 
     useEffect(() => {
-        if (isAuthenticated) fetchData();
-    }, [isAuthenticated]);
+        if (isLoggedIn) {
+            fetchProducts();
+        }
+    }, [isLoggedIn]);
 
-    const handleLogin = () => {
-        if (masterPass === "DriftBoss786") setIsAuthenticated(true);
-        else alert("Wrong Password!");
+    const fetchProducts = async () => {
+        const res = await axios.get(`${API_URL}/products`);
+        setProducts(res.data);
     };
 
-    const handleSubmit = async (e) => {
+    const handleAddProduct = async (e) => {
         e.preventDefault();
-        try {
-            if (form.isEdit) {
-                await axios.put(`${API_URL}/products/${form.id}`, form);
-                alert("Updated! ✅");
-            } else {
-                await axios.post(`${API_URL}/products`, form);
-                alert("Added to DriftKart! ➕");
-            }
-            setForm({ name: '', price: '', category: '', image: '', shopName: '', isEdit: false });
-            fetchData();
-        } catch (err) { alert("Server Error: Could not save."); }
+        await axios.post(`${API_URL}/products`, newProduct);
+        setNewProduct({ name: '', price: '', category: '', image: '', originalPrice: '' });
+        fetchProducts();
+        alert("Product Added! ✅");
     };
 
     const deleteProduct = async (id) => {
-        if (window.confirm("Delete this product?")) {
-            await axios.delete(`${API_URL}/products/${id}`);
-            fetchData();
-        }
+        await axios.delete(`${API_URL}/products/${id}`);
+        fetchProducts();
     };
 
-    if (!isAuthenticated) {
+    if (!isLoggedIn) {
         return (
-            <div style={styles.loginOverlay}>
-                <div style={styles.loginBox}>
-                    <h1 style={styles.logo}>Drift<span>Panel</span></h1>
-                    <p style={{ fontSize: '12px', color: '#888', marginBottom: '20px' }}>Authorized Personnel Only</p>
-                    <input type="password" placeholder="Enter Master Key" style={styles.input} onChange={(e) => setMasterPass(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && handleLogin()} />
-                    <button onClick={handleLogin} style={styles.mainBtn}>Unlock Dashboard</button>
+            <div style={styles.loginCont}>
+                <div style={styles.card}>
+                    <h2 style={{ marginBottom: '20px' }}>Admin Secure Login</h2>
+                    <input
+                        type="password"
+                        placeholder="Enter Admin Password"
+                        style={styles.input}
+                        onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button onClick={handleLogin} style={styles.btn}>Access Panel</button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div style={styles.dashboard}>
+        <div style={styles.container}>
             <header style={styles.header}>
-                <h1 style={styles.logo}>Drift<span>Kart</span> Admin</h1>
-                <div style={styles.tabGroup}>
-                    <button onClick={() => setActiveTab('inventory')} style={activeTab === 'inventory' ? styles.activeTab : styles.tab}>Inventory</button>
-                    <button onClick={() => setActiveTab('orders')} style={activeTab === 'orders' ? styles.activeTab : styles.tab}>Orders ({orders.length})</button>
-                    <button onClick={() => setIsAuthenticated(false)} style={styles.logoutBtn}>Logout</button>
-                </div>
+                <h1 style={{ margin: 0 }}>DriftKart <span style={{ color: '#E23744' }}>Admin</span></h1>
+                <button onClick={() => setIsLoggedIn(false)} style={styles.logoutBtn}>Logout</button>
             </header>
 
-            <main style={styles.container}>
-                {activeTab === 'inventory' ? (
-                    <>
-                        <div style={styles.card}>
-                            <h3 style={{ marginTop: 0 }}>{form.isEdit ? '✏️ Edit Product' : '➕ Add Product'}</h3>
-                            <form onSubmit={handleSubmit} style={styles.formGrid}>
-                                <input placeholder="Product Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={styles.input} required />
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <input placeholder="Price (₹)" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} style={{ ...styles.input, flex: 1 }} required />
-                                    <input placeholder="Shop Name" value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} style={{ ...styles.input, flex: 1 }} required />
-                                </div>
-                                <input placeholder="Category (Grocery, Stationery...)" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={styles.input} required />
-                                <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} style={styles.input} />
-                                <button type="submit" style={styles.addBtn}>{form.isEdit ? 'Update Now' : 'Add to Shop'}</button>
-                            </form>
-                        </div>
+            <div style={styles.content}>
+                <div style={styles.card}>
+                    <h3>Add New Product</h3>
+                    <form onSubmit={handleAddProduct}>
+                        <input type="text" placeholder="Product Name" style={styles.input} onChange={e => setNewProduct({ ...newProduct, name: e.target.value })} required />
+                        <input type="number" placeholder="Price" style={styles.input} onChange={e => setNewProduct({ ...newProduct, price: e.target.value })} required />
+                        <input type="number" placeholder="Original Price (MRP)" style={styles.input} onChange={e => setNewProduct({ ...newProduct, originalPrice: e.target.value })} />
+                        <input type="text" placeholder="Category" style={styles.input} onChange={e => setNewProduct({ ...newProduct, category: e.target.value })} required />
+                        <input type="text" placeholder="Image URL" style={styles.input} onChange={e => setNewProduct({ ...newProduct, image: e.target.value })} required />
+                        <button type="submit" style={styles.btn}>Add Product to Store</button>
+                    </form>
+                </div>
 
-                        <div style={styles.listContainer}>
-                            <h3 style={styles.sectionTitle}>Current Stock ({products.length})</h3>
-                            {products.map(p => (
-                                <div key={p._id} style={styles.itemRow}>
-                                    <img src={p.image || 'https://via.placeholder.com/50'} alt="" style={styles.thumb} />
-                                    <div style={{ flex: 1, marginLeft: '15px' }}>
-                                        <div style={{ fontWeight: '800' }}>{p.name}</div>
-                                        <div style={{ fontSize: '12px', color: '#666' }}>₹{p.price} • {p.shopName}</div>
-                                    </div>
-                                    <button onClick={() => setForm({ ...p, isEdit: true, id: p._id })} style={styles.iconBtn}>✏️</button>
-                                    <button onClick={() => deleteProduct(p._id)} style={styles.iconBtn}>🗑️</button>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                ) : (
-                    <div style={styles.ordersList}>
-                        <h3 style={styles.sectionTitle}>Live Orders</h3>
-                        {orders.length > 0 ? orders.map(o => (
-                            <div key={o._id} style={styles.orderCard}>
-                                <div style={styles.orderHeader}>
-                                    <strong>ID: #{o._id.slice(-5).toUpperCase()}</strong>
-                                    <span style={styles.statusBadge}>NEW ORDER</span>
-                                </div>
-                                <div style={{ fontSize: '13px', marginBottom: '10px' }}>
-                                    📍 <strong>Deliver to:</strong> {o.address?.house}, {o.address?.area} ({o.address?.type})
-                                </div>
-                                <div style={styles.orderItemsList}>
-                                    {o.items?.map((item, idx) => (
-                                        <div key={idx} style={styles.miniItem}>• {item.name} - ₹{item.price}</div>
-                                    ))}
-                                </div>
-                                <div style={styles.orderTotal}>Total: ₹{o.total}</div>
-                            </div>
-                        )) : <p style={{ textAlign: 'center', color: '#999' }}>No orders yet.</p>}
+                <div style={styles.listCard}>
+                    <h3>Current Inventory ({products.length})</h3>
+                    <div style={styles.tableHead}>
+                        <span>Item</span>
+                        <span>Category</span>
+                        <span>Price</span>
+                        <span>Action</span>
                     </div>
-                )}
-            </main>
+                    {products.map(p => (
+                        <div key={p._id} style={styles.itemRow}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <img src={p.image} width="30" height="30" style={{ objectFit: 'contain' }} alt="" />
+                                <span>{p.name}</span>
+                            </div>
+                            <span>{p.category}</span>
+                            <span style={{ fontWeight: 'bold' }}>₹{p.price}</span>
+                            <button onClick={() => deleteProduct(p._id)} style={styles.delBtn}>Delete</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };
+
 const styles = {
-    dashboard: { fontFamily: "'Inter', sans-serif", backgroundColor: '#F8F9FA', minHeight: '100vh' },
-    header: { backgroundColor: '#fff', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' },
-    logo: { fontSize: '20px', fontWeight: '900', margin: 0 },
-    tabGroup: { display: 'flex', gap: '10px', alignItems: 'center' },
-    tab: { padding: '8px 16px', border: 'none', cursor: 'pointer', fontWeight: '700', borderRadius: '10px', background: '#f0f0f0' },
-    activeTab: { padding: '8px 16px', border: 'none', cursor: 'pointer', fontWeight: '700', borderRadius: '10px', background: '#E23744', color: '#fff' },
-    container: { padding: '20px', maxWidth: '700px', margin: '0 auto' },
-    card: { backgroundColor: '#fff', padding: '25px', borderRadius: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '25px' },
-    formGrid: { display: 'flex', flexDirection: 'column', gap: '12px' },
-    input: { padding: '14px', border: '1px solid #eee', borderRadius: '12px', outline: 'none', backgroundColor: '#F9F9F9' },
-    addBtn: { padding: '16px', backgroundColor: '#1A1A1A', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', marginTop: '10px' },
-    itemRow: { backgroundColor: '#fff', padding: '12px 18px', borderRadius: '18px', display: 'flex', alignItems: 'center', marginBottom: '10px', border: '1px solid #f0f0f0' },
-    thumb: { width: '45px', height: '45px', borderRadius: '10px', objectFit: 'cover' },
-    iconBtn: { padding: '8px', border: 'none', background: '#f5f5f5', borderRadius: '8px', marginLeft: '8px', cursor: 'pointer' },
-    sectionTitle: { fontSize: '18px', fontWeight: '800', marginBottom: '15px', color: '#333' },
-    orderCard: { backgroundColor: '#fff', padding: '20px', borderRadius: '20px', marginBottom: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', borderLeft: '5px solid #E23744' },
-    orderHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '12px' },
-    statusBadge: { backgroundColor: '#FFF5F6', color: '#E23744', padding: '4px 10px', borderRadius: '6px', fontSize: '10px', fontWeight: '900' },
-    orderItemsList: { padding: '10px 0', borderTop: '1px solid #f9f9f9', borderBottom: '1px solid #f9f9f9', marginBottom: '10px' },
-    miniItem: { fontSize: '14px', color: '#555', marginBottom: '4px' },
-    orderTotal: { fontSize: '18px', fontWeight: '900' },
-    loginOverlay: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#111' },
-    loginBox: { padding: '40px', background: '#fff', borderRadius: '32px', textAlign: 'center', width: '340px' },
-    mainBtn: { width: '100%', padding: '16px', background: '#E23744', color: '#fff', border: 'none', borderRadius: '14px', fontWeight: '800', marginTop: '15px', cursor: 'pointer' },
-    logoutBtn: { background: 'none', border: '1px solid #eee', padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '12px' }
+    container: { backgroundColor: '#f0f2f5', minHeight: '100vh', fontFamily: 'Inter, sans-serif' },
+    header: { backgroundColor: '#fff', padding: '15px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
+    loginCont: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f2f5' },
+    content: { padding: '40px', maxWidth: '1000px', margin: '0 auto' },
+    card: { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px' },
+    listCard: { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' },
+    input: { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' },
+    btn: { width: '100%', padding: '12px', backgroundColor: '#E23744', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
+    logoutBtn: { padding: '8px 15px', backgroundColor: '#eee', border: 'none', borderRadius: '5px', cursor: 'pointer' },
+    tableHead: { display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px', borderBottom: '2px solid #eee', fontWeight: 'bold', fontSize: '14px', color: '#888' },
+    itemRow: { display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '15px 10px', borderBottom: '1px solid #f9f9f9', alignItems: 'center', fontSize: '14px' },
+    delBtn: { backgroundColor: '#fff', color: '#ff4d4f', border: '1px solid #ff4d4f', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' }
 };
 
 export default AdminPanel;
