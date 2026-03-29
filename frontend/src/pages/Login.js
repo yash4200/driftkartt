@@ -3,13 +3,17 @@ import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
     const [email, setEmail] = useState('');
-    const [phone, setPhone] = useState(''); // 🚩 New State
+    const [phone, setPhone] = useState('');
     const [pass, setPass] = useState('');
     const navigate = useNavigate();
 
     const handleLogin = (e) => {
         e.preventDefault();
-        navigate('/');
+        // 🚩 LOGIN LOGIC FIX: Iske bina Protected Routes kaam nahi karenge
+        localStorage.setItem('userLoggedIn', 'true');
+        localStorage.setItem('userEmail', email); // Optional: User ka email save karne ke liye
+
+        navigate('/'); // Login ke baad home page bhejo
     };
 
     return (
@@ -32,7 +36,6 @@ const Login = () => {
                         />
                     </div>
 
-                    {/* 🚩 ADDED PHONE NUMBER FIELD */}
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Phone Number</label>
                         <input
@@ -68,7 +71,6 @@ const Login = () => {
     );
 };
 
-// ... Styles wahi rahenge jo pehle the ...
 const styles = {
     container: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa', fontFamily: 'Inter, sans-serif' },
     loginBox: { width: '100%', maxWidth: '400px', padding: '40px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', textAlign: 'center' },
