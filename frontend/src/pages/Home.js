@@ -3,44 +3,112 @@ import axios from 'axios';
 
 const API_URL = "https://driftkart-backend.onrender.com";
 
-const Home = () => {
+const AdminPanel = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(localStorage.getItem("driftAdminAuth") === "true");
+  const [masterPass, setMasterPass] = useState('');
+  const [activeTab, setActiveTab] = useState('inventory');
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: '', price: '', category: '', image: '', shopName: '', isEdit: false, id: null });
 
-  useEffect(() => {
-    axios.get(`${API_URL}/products`)
-      .then(res => { setProducts(res.data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+  const fetchData = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/products`);
+      setProducts(res.data);
+    } catch (err) { console.error(err); }
+  };
 
-  const filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  useEffect(() => { if (isAuthenticated) fetchData(); }, [isAuthenticated]);
 
-  if (loading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading DriftKart... 🚀</div>;
+  const handleLogin = () => {
+    if (masterPass === "DriftBoss786") {
+      setIsAuthenticated(true);
+      localStorage.setItem("driftAdminAuth", "true");
+    } else { alert("❌ Incorrect Key"); }
+  };
 
-  return (
-    <div style={{ fontFamily: 'sans-serif' }}>
-      <header style={{ padding: '15px', position: 'sticky', top: 0, background: '#fff', boxShadow: '0 2px 5px #eee' }}>
-        <h1 style={{ margin: 0 }}>DriftKart</h1>
-        <input
-          style={{ width: '90%', padding: '10px', marginTop: '10px', borderRadius: '10px', border: '1px solid #ddd' }}
-          placeholder="Search products..."
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </header>
-      <div style={{ padding: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-        {filtered.map(p => (
-          <div key={p._id} style={{ border: '1px solid #eee', borderRadius: '15px', overflow: 'hidden' }}>
-            <img src={p.image} style={{ width: '100%', height: '120px', objectFit: 'cover' }} alt="" />
-            <div style={{ padding: '10px' }}>
-              <h4 style={{ margin: 0 }}>{p.name}</h4>
-              <p style={{ color: 'red', fontWeight: 'bold' }}>₹{p.price}</p>
-              <button style={{ width: '100%', background: '#E23744', color: '#fff', border: 'none', padding: '5px', borderRadius: '5px' }}>ADD</button>
-            </div>
-          </div>
-        ))}
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const data = { name: form.name, price: form.price, category: form.category, image: form.image, shopName: form.shopName };
+    try {
+      if (form.isEdit) {
+        await axios.put(`${API_URL}/products/${form.id}`, data);
+      } else {
+        await axios.post(`${API_URL}/products`, data);
+      }
+      setForm({ name: '', price: '', category: '', image: '', shopName: '', isEdit: false, id: null });
+      fetchData();
+    } catch (err) { alert("Error saving product"); }
+    finally { setIsSubmitting(false); }
+  };
+
+  const deleteProduct = async (id) => {
+    if (window.confirm("Delete this item?")) {
+      await axios.delete(`${API_URL}/products/${id}`);
+      fetchData();
+    }
+  };
+
+  if (!isAuthenticated) return (
+    <div style={styles.loginOverlay}>
+      <div style={styles.loginBox}>
+        <h1 style={styles.logo}>Drift<span>Panel</span></h1>
+        <input type="password" placeholder="Master Passkey" style={styles.input} onChange={(e) => setMasterPass(e.target.value)} />
+        <button onClick={handleLogin} style={styles.mainBtn}>Unlock Dashboard</button>
       </div>
     </div>
   );
+
+  return (
+    <div style={styles.dashboard}>
+      <header style={styles.header}>
+        <h1 style={styles.logo}>Drift<span>Kart</span> Admin</h1>
+        <button onClick={() => { setIsAuthenticated(false); localStorage.removeItem("driftAdminAuth"); }} style={styles.tab}>Logout</button>
+      </header>
+      <main style={styles.container}>
+        <div style={styles.card}>
+          <h3>{form.isEdit ? '📝 Edit Product' : '📦 Add New Product'}</h3>
+          <form onSubmit={handleSubmit} style={styles.formGrid}>
+            <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} style={styles.input} required />
+            <input placeholder="Price" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} style={styles.input} required />
+            <input placeholder="Shop Name" value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} style={styles.input} />
+            <input placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} style={styles.input} required />
+            <input placeholder="Image URL" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} style={styles.input} />
+            <button type="submit" disabled={isSubmitting} style={styles.addBtn}>{isSubmitting ? 'Saving...' : 'Save Product'}</button>
+          </form>
+        </div>
+
+        <div style={styles.listContainer}>
+          {products.map(p => (
+            <div key={p._id} style={styles.itemRow}>
+              <div style={{ flex: 1 }}>
+                <strong>{p.name}</strong> <br /> <small>₹{p.price} | {p.shopName}</small>
+              </div>
+              <button onClick={() => setForm({ ...p, isEdit: true, id: p._id })} style={styles.iconBtn}>✏️</button>
+              <button onClick={() => deleteProduct(p._id)} style={styles.iconBtn}>🗑️</button>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
 };
-export default Home;
+
+const styles = {
+  loginOverlay: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#000' },
+  loginBox: { padding: '40px', background: '#fff', borderRadius: '20px', textAlign: 'center' },
+  dashboard: { fontFamily: "'Inter', sans-serif", background: '#f4f4f4', minHeight: '100vh' },
+  header: { background: '#fff', padding: '15px', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #ddd' },
+  logo: { fontSize: '22px', fontWeight: '900', margin: 0 },
+  container: { padding: '20px', maxWidth: '600px', margin: '0 auto' },
+  card: { background: '#fff', padding: '20px', borderRadius: '15px', marginBottom: '20px' },
+  formGrid: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  input: { padding: '12px', borderRadius: '8px', border: '1px solid #ddd', outline: 'none' },
+  addBtn: { padding: '12px', background: '#E23744', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
+  itemRow: { background: '#fff', padding: '12px', borderRadius: '10px', display: 'flex', alignItems: 'center', marginBottom: '10px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
+  iconBtn: { marginLeft: '10px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px' },
+  mainBtn: { width: '100%', padding: '12px', background: '#E23744', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', marginTop: '15px' }
+};
+
+export default AdminPanel;
