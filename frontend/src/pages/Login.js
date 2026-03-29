@@ -2,82 +2,71 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-    const [phone, setPhone] = useState('');
-    const [showOtp, setShowOtp] = useState(false);
+    const [email, setEmail] = useState('');
+    const [pass, setPass] = useState('');
     const navigate = useNavigate();
 
-    const handleLogin = () => {
-        localStorage.setItem('userLoggedIn', 'true');
-        // Sends user back to Checkout if they came from there
-        navigate(-1);
+    const handleLogin = (e) => {
+        e.preventDefault();
+        // Yahan login logic aayega
+        navigate('/');
     };
 
     return (
         <div style={styles.container}>
-            <div style={styles.hero}>
-                <h1 style={styles.logo}>Drift<span>Kart</span></h1>
-                <p>Fastest Grocery Delivery in Town</p>
-            </div>
+            <div style={styles.loginBox}>
+                <h1 style={styles.logo}>Drift<span style={{ color: '#E23744' }}>Kart</span></h1>
+                <h2 style={styles.title}>Login to your account</h2>
+                <p style={styles.subtitle}>Enter your details to continue shopping</p>
 
-            <div style={styles.card}>
-                <h2 style={{ margin: '0 0 10px 0' }}>Login or Signup</h2>
-                <p style={{ color: '#666', fontSize: '14px', marginBottom: '25px' }}>Enter your details to sync your cart and orders</p>
-
-                <div style={styles.inputGroup}>
-                    <span style={{ fontWeight: 'bold', borderRight: '1px solid #ddd', paddingRight: '10px' }}>+91</span>
-                    <input
-                        type="number"
-                        placeholder="Mobile Number"
-                        style={styles.input}
-                        onChange={(e) => setPhone(e.target.value)}
-                    />
-                </div>
-
-                <button style={styles.mainBtn} onClick={() => setShowOtp(true)}>Continue</button>
-
-                <div style={styles.orRow}>
-                    <div style={styles.line}></div>
-                    <span style={{ padding: '0 10px', color: '#999', fontSize: '12px' }}>OR</span>
-                    <div style={styles.line}></div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button style={styles.altBtn} onClick={handleLogin}>
-                        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png" width="18" alt="g" /> Google
-                    </button>
-                    <button style={styles.altBtn} onClick={handleLogin}>
-                        <img src="https://cdn-icons-png.flaticon.com/512/732/732200.png" width="18" alt="e" /> Email
-                    </button>
-                </div>
-
-                {showOtp && (
-                    <div style={styles.modal}>
-                        <div style={styles.modalContent}>
-                            <h3>Verify OTP</h3>
-                            <input type="number" placeholder="Enter 123456" style={styles.otpInput} />
-                            <button style={styles.mainBtn} onClick={handleLogin}>Login Now</button>
-                        </div>
+                <form onSubmit={handleLogin} style={styles.form}>
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Email Address</label>
+                        <input
+                            type="email"
+                            placeholder="name@example.com"
+                            style={styles.input}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
                     </div>
-                )}
+                    <div style={styles.inputGroup}>
+                        <label style={styles.label}>Password</label>
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                            style={styles.input}
+                            value={pass}
+                            onChange={(e) => setPass(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <button type="submit" style={styles.loginBtn}>Login</button>
+                </form>
+
+                <div style={styles.footer}>
+                    <span>New to DriftKart? </span>
+                    <span style={styles.link} onClick={() => navigate('/signup')}>Create an account</span>
+                </div>
             </div>
         </div>
     );
 };
 
 const styles = {
-    container: { height: '100vh', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, sans-serif' },
-    hero: { flex: 1, backgroundColor: '#E23744', color: '#fff', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
-    logo: { fontSize: '40px', fontWeight: '900', margin: 0 },
-    card: { flex: 1.5, backgroundColor: '#fff', marginTop: '-30px', borderTopLeftRadius: '30px', borderTopRightRadius: '30px', padding: '40px 30px' },
-    inputGroup: { display: 'flex', alignItems: 'center', border: '1.5px solid #eee', borderRadius: '12px', padding: '15px', gap: '15px', marginBottom: '20px' },
-    input: { border: 'none', outline: 'none', fontSize: '16px', width: '100%' },
-    mainBtn: { width: '100%', padding: '18px', backgroundColor: '#1c1c1c', color: '#fff', borderRadius: '12px', border: 'none', fontWeight: 'bold', fontSize: '16px', cursor: 'pointer' },
-    orRow: { display: 'flex', alignItems: 'center', margin: '30px 0' },
-    line: { flex: 1, height: '1px', backgroundColor: '#eee' },
-    altBtn: { flex: 1, padding: '12px', border: '1px solid #eee', borderRadius: '12px', background: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', fontWeight: 'bold', cursor: 'pointer' },
-    modal: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end' },
-    modalContent: { backgroundColor: '#fff', width: '100%', padding: '40px 30px', borderTopLeftRadius: '30px', borderTopRightRadius: '30px' },
-    otpInput: { width: '100%', padding: '15px', border: '1.5px solid #eee', borderRadius: '12px', marginBottom: '20px', textAlign: 'center', fontSize: '20px', fontWeight: 'bold', letterSpacing: '5px' }
+    container: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa', fontFamily: 'Inter, sans-serif' },
+    loginBox: { width: '100%', maxWidth: '400px', padding: '40px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', textAlign: 'center' },
+    logo: { fontSize: '28px', fontWeight: '900', marginBottom: '20px', letterSpacing: '-1px' },
+    title: { fontSize: '20px', fontWeight: '700', color: '#222', marginBottom: '8px' },
+    subtitle: { fontSize: '13px', color: '#888', marginBottom: '30px' },
+    form: { textAlign: 'left' },
+    inputGroup: { marginBottom: '20px' },
+    label: { display: 'block', fontSize: '12px', fontWeight: '700', color: '#555', marginBottom: '8px', textTransform: 'uppercase' },
+    input: { width: '100%', padding: '12px 15px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', boxSizing: 'border-box', outline: 'none' },
+    loginBtn: { width: '100%', padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#E23744', color: '#fff', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '10px' },
+    footer: { marginTop: '25px', fontSize: '13px', color: '#666' },
+    link: { color: '#E23744', fontWeight: '700', cursor: 'pointer' }
 };
 
 export default Login;
