@@ -6,8 +6,9 @@ import Success from './pages/Success';
 import Results from './pages/Results';
 import AdminPanel from './pages/AdminPanel';
 import Login from './pages/Login';
+import Orders from './pages/Orders'; // 🚩 Naya Import
 
-// 🛡️ Protected Route: Sirf Checkout/Success jaise pages ke liye
+// 🛡️ Protected Route: Sirf logged-in users ke liye
 const ProtectedRoute = ({ children }) => {
   const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
   return isLoggedIn ? children : <Navigate to="/login" />;
@@ -27,16 +28,17 @@ function App() {
     <Router>
       <ScrollToTop />
       <Routes>
-        {/* 🔓 PUBLIC ZONE: Ye bina login ke khulega */}
+        {/* 🔓 PUBLIC ZONE */}
         <Route path="/" element={<Home />} />
         <Route path="/results" element={<Results />} />
         <Route path="/login" element={<Login />} />
 
-        {/* 🔒 PROTECTED CUSTOMER ZONE: Inke liye login chahiye */}
+        {/* 🔒 PROTECTED CUSTOMER ZONE */}
         <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
         <Route path="/success" element={<ProtectedRoute><Success /></ProtectedRoute>} />
+        <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} /> {/* 🚩 Orders Route Added */}
 
-        {/* ⚙️ ADMIN SECRET PORTAL: Iska apna alag login hai jo humne AdminPanel mein banaya hai */}
+        {/* ⚙️ ADMIN SECRET PORTAL */}
         <Route path="/admin-portal-access" element={<AdminPanel />} />
 
         {/* ⚠️ 404: Professional Error Page */}
