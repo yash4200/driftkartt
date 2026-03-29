@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+// 🚩 TERA SAHI BACKEND URL
 const API_URL = "https://driftkartt.onrender.com";
+
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,50 +26,86 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  // Filter Logic for Search
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const categories = ['All', ...new Set(products.map(p => p.category))];
 
-  if (loading) return <div style={styles.loader}>Loading DriftKart... 🚀</div>;
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  if (loading) return (
+    <div style={styles.loader}>
+      <div className="spinner"></div>
+      <p>Fetching Fresh Products... 🚀</p>
+    </div>
+  );
 
   return (
     <div style={styles.container}>
-      {/* --- HEADER & SEARCH --- */}
+      {/* --- STICKY HEADER --- */}
       <header style={styles.header}>
-        <h1 style={styles.logo}>Drift<span>Kart</span></h1>
-        <div style={styles.searchBar}>
+        <div style={styles.navTop}>
+          <h1 style={styles.logo} onClick={() => window.location.reload()}>
+            Drift<span style={{ color: '#E23744' }}>Kart</span>
+          </h1>
+          <div style={styles.cartIcon} onClick={() => navigate('/checkout')}>
+            🛒 <span style={styles.cartBadge}>{products.length > 0 ? '2' : '0'}</span>
+          </div>
+        </div>
+
+        <div style={styles.searchContainer}>
           <input
             type="text"
-            placeholder="Search for groceries, snacks..."
-            style={styles.searchInput}
+            placeholder="Search for 'Maggi' or 'Stationery'..."
+            style={styles.searchBar}
+            value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </header>
 
-      {/* --- HERO SECTION --- */}
-      <div style={styles.hero}>
-        <h2 style={{ margin: 0 }}>Superfast Delivery ⚡</h2>
-        <p style={{ opacity: 0.8, fontSize: '14px' }}>Fresh items from nearby shops to your doorstep.</p>
+      {/* --- CATEGORY CHIPS --- */}
+      <div style={styles.categoryScroll}>
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            style={activeCategory === cat ? styles.chipActive : styles.chip}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
-      {/* --- PRODUCT GRID --- */}
       <main style={styles.main}>
-        <h3 style={styles.sectionTitle}>All Products ({filteredProducts.length})</h3>
+        <div style={styles.sectionHeader}>
+          <h2 style={styles.sectionTitle}>
+            {activeCategory === 'All' ? 'Everything You Need' : `${activeCategory} Specials`}
+          </h2>
+          <span style={styles.itemCount}>{filteredProducts.length} Items</span>
+        </div>
+
+        {/* --- PRODUCT GRID --- */}
         <div style={styles.grid}>
-          {filteredProducts.map(product => (
-            <div key={product._id} style={styles.card} onClick={() => navigate('/checkout')}>
+          {filteredProducts.map((p) => (
+            <div
+              key={p._id}
+              style={styles.card}
+              onClick={() => navigate(`/checkout`)} // Yahan product detail page ka link dal sakte ho
+            >
               <div style={styles.imgWrapper}>
-                <img src={product.image || 'https://via.placeholder.com/150'} alt={product.name} style={styles.img} />
-                <span style={styles.categoryBadge}>{product.category}</span>
+                <span style={styles.categoryBadge}>{p.category}</span>
+                <img src={p.image} alt={p.name} style={styles.img} />
               </div>
               <div style={styles.info}>
-                <h4 style={styles.pName}>{product.name}</h4>
-                <p style={styles.pShop}>📍 {product.shopName}</p>
+                <p style={styles.shopName}>{p.shopName || 'Local Store'}</p>
+                <h3 style={styles.pName}>{p.name}</h3>
                 <div style={styles.priceRow}>
-                  <span style={styles.price}>₹{product.price}</span>
+                  <div>
+                    <span style={styles.price}>₹{p.price}</span>
+                    {p.originalPrice && <span style={styles.oldPrice}>₹{p.originalPrice}</span>}
+                  </div>
                   <button style={styles.addBtn}>ADD</button>
                 </div>
               </div>
@@ -78,28 +117,69 @@ const Home = () => {
   );
 };
 
-// --- MODERN UI STYLES ---
+// --- MODERN STYLING (Premium Feel) ---
 const styles = {
-  container: { fontFamily: "'Inter', sans-serif", backgroundColor: '#fff', minHeight: '100vh' },
-  header: { padding: '15px 20px', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 10, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' },
-  logo: { fontSize: '24px', fontWeight: '900', margin: '0 0 10px 0', letterSpacing: '-1px' },
-  searchBar: { backgroundColor: '#F3F4F6', borderRadius: '12px', padding: '10px 15px', display: 'flex' },
-  searchInput: { border: 'none', background: 'none', outline: 'none', width: '100%', fontSize: '14px' },
-  hero: { background: 'linear-gradient(90deg, #E23744 0%, #FF525F 100%)', color: '#fff', padding: '30px 20px', borderRadius: '0 0 30px 30px' },
+  container: { backgroundColor: '#f8f9fa', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
+  header: {
+    backgroundColor: '#fff',
+    padding: '15px 20px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
+    boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+  },
+  navTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
+  logo: { fontSize: '24px', fontWeight: '900', letterSpacing: '-1px', cursor: 'pointer' },
+  cartIcon: { position: 'relative', fontSize: '22px', cursor: 'pointer' },
+  cartBadge: {
+    position: 'absolute', top: '-5px', right: '-8px',
+    backgroundColor: '#E23744', color: '#fff',
+    fontSize: '10px', padding: '2px 6px', borderRadius: '10px'
+  },
+  searchBar: {
+    width: '100%', padding: '12px 15px', borderRadius: '12px',
+    border: '1px solid #eee', backgroundColor: '#f1f3f5', fontSize: '14px',
+    outline: 'none'
+  },
+  categoryScroll: {
+    display: 'flex', gap: '10px', padding: '15px 20px',
+    overflowX: 'auto', whiteSpace: 'nowrap', backgroundColor: '#fff'
+  },
+  chip: {
+    padding: '8px 18px', borderRadius: '20px', border: '1px solid #eee',
+    backgroundColor: '#fff', fontSize: '13px', fontWeight: '600', cursor: 'pointer'
+  },
+  chipActive: {
+    padding: '8px 18px', borderRadius: '20px', border: '1px solid #E23744',
+    backgroundColor: '#E23744', color: '#fff', fontSize: '13px', fontWeight: '600'
+  },
   main: { padding: '20px' },
-  sectionTitle: { fontSize: '18px', fontWeight: '800', marginBottom: '20px' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' },
-  card: { border: '1px solid #f0f0f0', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', transition: '0.2s' },
-  imgWrapper: { position: 'relative', height: '140px', backgroundColor: '#f9f9f9' },
-  img: { width: '100%', height: '100%', objectFit: 'contain' },
-  categoryBadge: { position: 'absolute', top: '8px', left: '8px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '2px 8px', borderRadius: '6px', fontSize: '10px', fontWeight: '700' },
-  info: { padding: '12px' },
-  pName: { margin: '0 0 4px 0', fontSize: '14px', fontWeight: '700' },
-  pShop: { margin: '0 0 10px 0', fontSize: '11px', color: '#666' },
+  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  sectionTitle: { fontSize: '18px', fontWeight: '800', color: '#222' },
+  itemCount: { fontSize: '12px', color: '#888', fontWeight: '600' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '20px' },
+  card: {
+    backgroundColor: '#fff', borderRadius: '20px', overflow: 'hidden',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.03)', transition: 'transform 0.2s'
+  },
+  imgWrapper: { position: 'relative', height: '150px', padding: '15px', textAlign: 'center' },
+  img: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
+  categoryBadge: {
+    position: 'absolute', top: '10px', left: '10px',
+    backgroundColor: '#f8f9fa', fontSize: '9px', fontWeight: '800',
+    padding: '3px 8px', borderRadius: '5px', color: '#555', textTransform: 'uppercase'
+  },
+  info: { padding: '15px', paddingTop: '0' },
+  shopName: { fontSize: '10px', color: '#E23744', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' },
+  pName: { fontSize: '14px', fontWeight: '700', margin: '0 0 10px 0', height: '34px', overflow: 'hidden' },
   priceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  price: { fontWeight: '900', fontSize: '16px' },
-  addBtn: { border: '1px solid #E23744', color: '#E23744', background: '#fff', padding: '4px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '12px', cursor: 'pointer' },
-  loader: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: '800' }
+  price: { fontSize: '16px', fontWeight: '800' },
+  oldPrice: { fontSize: '11px', color: '#aaa', textDecoration: 'line-through', marginLeft: '5px' },
+  addBtn: {
+    backgroundColor: '#fff', color: '#E23744', border: '1px solid #E23744',
+    padding: '5px 15px', borderRadius: '8px', fontSize: '12px', fontWeight: '800', cursor: 'pointer'
+  },
+  loader: { height: '80vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', color: '#888' }
 };
 
 export default Home;
