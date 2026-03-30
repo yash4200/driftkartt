@@ -1,119 +1,155 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const API_URL = "https://driftkartt.onrender.com";
 
 const Checkout = () => {
-  const [cartItem, setCartItem] = useState(null);
-  const [payMethod, setPayMethod] = useState('cod');
   const navigate = useNavigate();
+  const [cartItem, setCartItem] = useState(null);
+  const [address, setAddress] = useState({
+    street: '',
+    city: 'Bhubaneswar',
+    zip: '',
+    phone: ''
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const item = localStorage.getItem('cartItem');
-    if (item) setCartItem(JSON.parse(item));
-  }, []);
+    // 🚩 Check if user is logged in
+    const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
 
-  const handlePlaceOrder = () => {
-    alert("Order Placed Successfully!");
-    localStorage.removeItem('cartItem'); // Order ke baad cart saaf
-    navigate('/success');
+    // 🚩 Get item from localStorage (Jo Home se select kiya tha)
+    const item = JSON.parse(localStorage.getItem('cartItem'));
+    if (!item) {
+      navigate('/');
+    } else {
+      setCartItem(item);
+    }
+  }, [navigate]);
+
+  const handlePlaceOrder = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    const orderData = {
+      shopId: cartItem.shopId,
+      shopName: cartItem.shopName,
+      items: [{
+        productId: cartItem._id,
+        name: cartItem.name,
+        price: cartItem.price,
+        quantity: 1
+      }],
+      totalAmount: cartItem.price,
+      customerName: "Neel (thetecnil)", // Yahan auth se naam le sakte ho
+      customerPhone: address.phone,
+      shippingAddress: {
+        street: address.street,
+        city: address.city,
+        zipCode: address.zip
+      }
+    };
+
+    try {
+      await axios.post(`${API_URL}/orders`, orderData);
+      alert("🎉 Order Placed Successfully! Your deal is on the way.");
+      localStorage.removeItem('cartItem');
+      navigate('/');
+    } catch (err) {
+      alert("❌ Something went wrong. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (!cartItem) return (
-    <div style={styles.emptyCart}>
-      <h2>Your cart is empty! 🛒</h2>
-      <button style={styles.homeBtn} onClick={() => navigate('/')}>Go Back to Shopping</button>
-    </div>
-  );
+  if (!cartItem) return null;
 
   return (
-    <div style={styles.container}>
-      <header style={styles.miniHeader}>
-        <h1 style={styles.logo} onClick={() => navigate('/')}>Drift<span style={{ color: '#E23744' }}>Kart</span></h1>
-        <span style={styles.stepTitle}>Secure Checkout</span>
+    <div style={styles.page}>
+      <header style={styles.header}>
+        <button onClick={() => navigate(-1)} style={styles.backBtn}>←</button>
+        <h2 style={styles.title}>Checkout</h2>
       </header>
 
-      <main style={styles.main}>
-        {/* --- PRODUCT SUMMARY --- */}
-        <section style={styles.section}>
+      <div style={styles.container}>
+        {/* 📦 Order Summary Card */}
+        <section style={styles.card}>
           <h3 style={styles.sectionTitle}>Order Summary</h3>
-          <div style={styles.itemCard}>
-            <img src={cartItem.image} alt={cartItem.name} style={styles.itemImg} />
-            <div style={styles.itemDetails}>
+          <div style={styles.itemRow}>
+            <img src={cartItem.image} alt="" style={styles.itemImg} />
+            <div style={styles.itemInfo}>
               <p style={styles.itemName}>{cartItem.name}</p>
-              <p style={styles.itemPrice}>₹{cartItem.price} <span style={styles.itemOldPrice}>₹{cartItem.originalPrice}</span></p>
+              <p style={styles.shopDetail}>Sold by: <b>{cartItem.shopName}</b></p>
             </div>
+            <p style={styles.itemPrice}>₹{cartItem.price}</p>
           </div>
         </section>
 
-        {/* --- ADDRESS SECTION --- */}
-        <section style={styles.section}>
-          <h3 style={styles.sectionTitle}>Delivery Address</h3>
-          <input type="text" placeholder="Full Name" style={styles.input} />
-          <input type="text" placeholder="Flat / House No. / Building" style={styles.input} />
-          <input type="text" placeholder="Area / Sector / Locality" style={styles.input} />
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <input type="text" placeholder="Pincode" style={styles.input} />
-            <input type="text" placeholder="City" style={styles.input} />
-          </div>
-        </section>
+        {/* 📍 Delivery Details Form */}
+        <section style={styles.card}>
+          <h3 style={styles.sectionTitle}>Delivery Details</h3>
+          <form onSubmit={handlePlaceOrder}>
+            <input
+              type="text" placeholder="Flat / Street / Landmark" required
+              style={styles.input} onChange={(e) => setAddress({ ...address, street: e.target.value })}
+            />
+            <div style={styles.row}>
+              <input
+                type="text" placeholder="ZIP Code" required
+                style={{ ...styles.input, flex: 1 }} onChange={(e) => setAddress({ ...address, zip: e.target.value })}
+              />
+              <input
+                type="text" placeholder="Bhubaneswar" disabled
+                style={{ ...styles.input, flex: 1, backgroundColor: '#f9f9f9' }}
+              />
+            </div>
+            <input
+              type="tel" placeholder="Phone Number" required
+              style={styles.input} onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+            />
 
-        {/* --- PAYMENT OPTIONS --- */}
-        <section style={styles.section}>
-          <h3 style={styles.sectionTitle}>Payment Method</h3>
-          <div
-            style={payMethod === 'cod' ? styles.payActive : styles.payOption}
-            onClick={() => setPayMethod('cod')}
-          >
-            <span>💵 Cash on Delivery (COD)</span>
-            <div style={payMethod === 'cod' ? styles.radioOn : styles.radioOff}></div>
-          </div>
-          <div
-            style={payMethod === 'upi' ? styles.payActive : styles.payOption}
-            onClick={() => setPayMethod('upi')}
-          >
-            <span>📱 UPI / Google Pay</span>
-            <div style={payMethod === 'upi' ? styles.radioOn : styles.radioOff}></div>
-          </div>
+            <div style={styles.footer}>
+              <div style={styles.totalArea}>
+                <span style={styles.totalLabel}>Total to Pay</span>
+                <span style={styles.totalAmount}>₹{cartItem.price}</span>
+              </div>
+              <button type="submit" style={styles.placeOrderBtn} disabled={loading}>
+                {loading ? "Placing Order..." : "CONFIRM ORDER"}
+              </button>
+            </div>
+          </form>
         </section>
-
-        {/* --- TOTAL & BUTTON --- */}
-        <div style={styles.footer}>
-          <div style={styles.totalRow}>
-            <span>Grand Total</span>
-            <span style={styles.totalAmount}>₹{cartItem.price}</span>
-          </div>
-          <button style={styles.placeOrderBtn} onClick={handlePlaceOrder}>
-            PLACE ORDER
-          </button>
-        </div>
-      </main>
+      </div>
     </div>
   );
 };
 
 const styles = {
-  container: { backgroundColor: '#f8f9fa', minHeight: '100vh', fontFamily: 'Inter, sans-serif' },
-  miniHeader: { backgroundColor: '#fff', padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee' },
-  logo: { fontSize: '20px', fontWeight: '900', cursor: 'pointer' },
-  stepTitle: { fontSize: '12px', fontWeight: '700', color: '#888', textTransform: 'uppercase' },
-  main: { padding: '20px', maxWidth: '600px', margin: '0 auto' },
-  section: { backgroundColor: '#fff', padding: '20px', borderRadius: '15px', marginBottom: '15px', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' },
-  sectionTitle: { fontSize: '15px', fontWeight: '800', marginBottom: '15px', color: '#333' },
-  itemCard: { display: 'flex', gap: '15px', alignItems: 'center' },
-  itemImg: { width: '60px', height: '60px', objectFit: 'contain', backgroundColor: '#f9f9f9', borderRadius: '8px' },
-  itemName: { fontSize: '14px', fontWeight: '600', margin: '0 0 5px 0' },
-  itemPrice: { fontSize: '16px', fontWeight: '800', margin: 0 },
-  itemOldPrice: { fontSize: '12px', color: '#aaa', textDecoration: 'line-through', fontWeight: '400' },
-  input: { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #eee', marginBottom: '10px', fontSize: '14px', boxSizing: 'border-box', outline: 'none', backgroundColor: '#fafafa' },
-  payOption: { display: 'flex', justifyContent: 'space-between', padding: '15px', borderRadius: '10px', border: '1px solid #eee', marginBottom: '10px', cursor: 'pointer', fontSize: '14px' },
-  payActive: { display: 'flex', justifyContent: 'space-between', padding: '15px', borderRadius: '10px', border: '1.5px solid #E23744', backgroundColor: '#FFF5F6', marginBottom: '10px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' },
-  radioOff: { width: '18px', height: '18px', borderRadius: '50%', border: '2px solid #ddd' },
-  radioOn: { width: '18px', height: '18px', borderRadius: '50%', border: '5px solid #E23744' },
-  footer: { position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#fff', padding: '20px', boxShadow: '0 -5px 20px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: '15px' },
-  totalRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  totalAmount: { fontSize: '20px', fontWeight: '900', color: '#E23744' },
-  placeOrderBtn: { backgroundColor: '#E23744', color: '#fff', border: 'none', padding: '16px', borderRadius: '12px', fontSize: '16px', fontWeight: '800', cursor: 'pointer' },
-  emptyCart: { textAlign: 'center', padding: '50px' },
-  homeBtn: { backgroundColor: '#E23744', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '8px', marginTop: '20px', cursor: 'pointer' }
+  page: { backgroundColor: '#F7F7F7', minHeight: '100vh', fontFamily: 'Inter, sans-serif' },
+  header: { backgroundColor: '#fff', padding: '15px 20px', display: 'flex', alignItems: 'center', gap: '15px', borderBottom: '1px solid #eee' },
+  backBtn: { background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' },
+  title: { fontSize: '18px', fontWeight: '800', margin: 0 },
+  container: { padding: '15px' },
+  card: { backgroundColor: '#fff', borderRadius: '15px', padding: '15px', marginBottom: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
+  sectionTitle: { fontSize: '14px', fontWeight: '800', marginBottom: '15px', color: '#666', textTransform: 'uppercase' },
+  itemRow: { display: 'flex', alignItems: 'center', gap: '12px' },
+  itemImg: { width: '50px', height: '50px', objectFit: 'contain' },
+  itemInfo: { flex: 1 },
+  itemName: { fontSize: '14px', fontWeight: '700', margin: 0 },
+  shopDetail: { fontSize: '11px', color: '#888', margin: '2px 0 0 0' },
+  itemPrice: { fontWeight: '900', fontSize: '16px' },
+  input: { width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '12px', fontSize: '14px', boxSizing: 'border-box' },
+  row: { display: 'flex', gap: '10px' },
+  footer: { marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '15px' },
+  totalArea: { display: 'flex', justifyContent: 'space-between', marginBottom: '15px' },
+  totalLabel: { fontWeight: '600', color: '#666' },
+  totalAmount: { fontWeight: '900', fontSize: '20px', color: '#1c1c1c' },
+  placeOrderBtn: { width: '100%', backgroundColor: '#E23744', color: '#fff', border: 'none', padding: '15px', borderRadius: '12px', fontWeight: '800', fontSize: '16px', cursor: 'pointer' }
 };
 
 export default Checkout;
