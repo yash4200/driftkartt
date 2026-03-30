@@ -10,19 +10,29 @@ const Home = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
 
-  // 🚩 REAL LOCAL STORES LOGIC
+  // 🚩 LOCAL SHOP MOTO STATE
   const [localStore, setLocalStore] = useState({ name: 'Sharma Grocery Store', dist: '0.8 km' });
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Local Shop Moto: Neighbourhood stores list
+    // 🚩 1. ASK FOR LOCATION PERMISSION
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => { console.log("Location Granted"); },
+        (error) => { console.log("Location Denied"); }
+      );
+    }
+
+    // 🚩 2. RANDOM LOCAL STORE LOGIC
     const stores = [
       { name: 'Sharma Grocery & Daily Needs', dist: '0.6 km' },
       { name: 'All In One General Store', dist: '1.2 km' },
-      { name: 'Gupta Ji Supermart', dist: '0.9 km' }
+      { name: 'Gupta Ji Supermart', dist: '0.9 km' },
+      { name: 'Verma Ji Kirana Store', dist: '0.4 km' }
     ];
     setLocalStore(stores[Math.floor(Math.random() * stores.length)]);
 
+    // 🚩 3. FETCH PRODUCTS
     const fetchProducts = async () => {
       try {
         const res = await axios.get(`${API_URL}/products`);
@@ -74,7 +84,7 @@ const Home = () => {
           <div style={styles.searchContainer}>
             <input
               type="text"
-              placeholder="Search local products..."
+              placeholder="Search local products near you..."
               style={styles.searchBar}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -89,7 +99,7 @@ const Home = () => {
         </div>
       </header>
 
-      {/* 🚩 UPDATED: LOCAL SHOP SECTION (Supporting Neighborhood Shops) */}
+      {/* 🚩 LOCAL PARTNER SECTION (Moto Integrated) */}
       <div style={styles.storeSection}>
         <div style={styles.storeCard}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -97,7 +107,7 @@ const Home = () => {
             <div>
               <p style={styles.storeLabel}>Delivering from Local Partner</p>
               <h4 style={styles.storeName}>{localStore.name} • <span style={{ color: '#2E7D32' }}>{localStore.dist}</span></h4>
-              <p style={{ margin: 0, fontSize: '10px', color: '#999' }}>Empowering local retailers nearby</p>
+              <p style={{ margin: 0, fontSize: '10px', color: '#999' }}>Empowering neighborhood retailers</p>
             </div>
           </div>
           <div style={styles.blinkitBadge}>⚡ 12 MINS</div>
@@ -163,27 +173,22 @@ const styles = {
   headerIcons: { display: 'flex', gap: '15px', alignItems: 'center' },
   iconItem: { position: 'relative', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
   cartBadge: { backgroundColor: '#E23744', color: '#fff', fontSize: '9px', padding: '2px 5px', borderRadius: '10px', marginLeft: '3px' },
-
   storeSection: { padding: '10px 20px', backgroundColor: '#fff' },
   storeCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', backgroundColor: '#F8F9FB', borderRadius: '12px', border: '1px solid #EDF2F7' },
   storeIconCircle: { fontSize: '20px', backgroundColor: '#fff', padding: '8px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
   storeLabel: { fontSize: '10px', color: '#888', fontWeight: '800', textTransform: 'uppercase', margin: 0 },
   storeName: { fontSize: '13px', fontWeight: '700', margin: 0 },
   blinkitBadge: { backgroundColor: '#000', color: '#fff', padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: '900' },
-
   categoryScroll: { display: 'flex', gap: '8px', padding: '10px 20px', overflowX: 'auto', backgroundColor: '#fff', borderBottom: '1px solid #eee' },
   chip: { padding: '6px 14px', borderRadius: '18px', border: '1px solid #ddd', backgroundColor: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer' },
   chipActive: { padding: '6px 14px', borderRadius: '18px', backgroundColor: '#000', color: '#fff', fontSize: '12px', fontWeight: '600' },
-
   main: { padding: '15px' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' },
   card: { backgroundColor: '#fff', borderRadius: '16px', overflow: 'hidden', border: '1px solid #f0f0f0', cursor: 'pointer' },
   imgWrapper: { position: 'relative', height: '150px', padding: '15px', textAlign: 'center' },
   img: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
-
   timeTag: { position: 'absolute', bottom: '10px', left: '10px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '800', border: '1px solid #eee' },
   discountBadge: { position: 'absolute', top: '10px', left: '10px', backgroundColor: '#3182CE', fontSize: '9px', fontWeight: '900', padding: '2px 5px', borderRadius: '4px', color: '#fff' },
-
   info: { padding: '12px', paddingTop: 0 },
   pName: { fontSize: '13px', fontWeight: '600', margin: '0 0 8px 0', height: '32px', overflow: 'hidden' },
   priceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
@@ -191,7 +196,6 @@ const styles = {
   price: { fontSize: '15px', fontWeight: '800' },
   oldPrice: { fontSize: '10px', color: '#aaa', textDecoration: 'line-through' },
   addBtn: { backgroundColor: '#fff', color: '#E23744', border: '1px solid #E23744', padding: '5px 15px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', cursor: 'pointer' },
-
   loaderContainer: { padding: '20px' },
   headerDummy: { height: '50px', backgroundColor: '#fff', borderRadius: '8px', marginBottom: '15px' },
   skeletonGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' },
