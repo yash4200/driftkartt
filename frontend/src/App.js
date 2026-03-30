@@ -10,7 +10,8 @@ import AdminPanel from './pages/AdminPanel';
 import Login from './pages/Login';
 import Orders from './pages/Orders';
 import Signup from './pages/Signup';
-import Listing from './pages/Listing'; // 🚩 1. See All Page Import kiya
+import Listing from './pages/Listing';
+import ShopDetail from './pages/ShopDetail'; // 🚩 1. Shop Detail Page Import kiya
 
 // 🛡️ Protected Route Logic
 const ProtectedRoute = ({ children }) => {
@@ -40,6 +41,9 @@ function App() {
 
         {/* 🚩 2. See All / Category Grid Route */}
         <Route path="/listing" element={<Listing />} />
+
+        {/* 🚩 3. Shop Detail Route (Dynamic ID ke saath) */}
+        <Route path="/shop/:shopId" element={<ShopDetail />} />
 
         {/* 🔒 PROTECTED CUSTOMER ZONE */}
         <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />

@@ -11,14 +11,12 @@ const Home = () => {
   const [filteredDeals, setFilteredDeals] = useState([]);
   const [userCity, setUserCity] = useState("Detecting...");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [cart, setCart] = useState([]); // 🛒 Cart State
+  const [cart, setCart] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const loggedIn = localStorage.getItem('userLoggedIn') === 'true';
     setIsLoggedIn(loggedIn);
-
-    // Load existing cart from local storage
     const savedCart = JSON.parse(localStorage.getItem('driftCart')) || [];
     setCart(savedCart);
 
@@ -58,23 +56,18 @@ const Home = () => {
     }
   }, [searchTerm, products]);
 
-  // 🔥 UPDATED: Multi-Item Add Logic
   const handleAddToCart = (item) => {
     if (!isLoggedIn) {
-      alert("Please login first! 🛒");
       navigate('/login');
       return;
     }
-
     let currentCart = [...cart];
     const existingItemIndex = currentCart.findIndex(i => i._id === item._id);
-
     if (existingItemIndex > -1) {
       currentCart[existingItemIndex].quantity += 1;
     } else {
       currentCart.push({ ...item, quantity: 1 });
     }
-
     setCart(currentCart);
     localStorage.setItem('driftCart', JSON.stringify(currentCart));
   };
@@ -83,26 +76,24 @@ const Home = () => {
 
   return (
     <div style={styles.container}>
+      {/* 🚩 TOP NAV: Logo & Location */}
       <header style={styles.header}>
         <div style={styles.topRow}>
-          <div style={styles.locRow}>
-            <span style={styles.locLabel}>ORDERING FROM</span>
-            <h3 style={styles.locName}>📍 {userCity}</h3>
+          <div style={styles.logoGroup}>
+            <h1 style={styles.mainLogo} onClick={() => navigate('/')}>Drift<span>Kart</span></h1>
+            <div style={styles.locRow}>
+              <span style={styles.locName}>📍 {userCity}</span>
+            </div>
           </div>
           <div style={styles.profileIcon} onClick={() => navigate(isLoggedIn ? '/profile' : '/login')}>
-            {isLoggedIn ? <div style={styles.userInitial}>N</div> : (
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            )}
+            {isLoggedIn ? <div style={styles.userInitial}>N</div> : "👤"}
           </div>
         </div>
 
         <div style={styles.searchContainer}>
           <input
             type="text"
-            placeholder="Search 'Milk', 'Atta' or 'Maggi' to compare..."
+            placeholder="Search 'Maggi', 'Atta' or 'Coke' to compare..."
             style={styles.searchBar}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -113,66 +104,68 @@ const Home = () => {
       <main style={styles.main}>
         {searchTerm === "" ? (
           <>
-            <h2 style={styles.sectionTitle}>Top Brands for you</h2>
+            {/* 🚩 SECTION: Stores Near You */}
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>Stores near you</h2>
+              <span style={styles.seeAll}>See all</span>
+            </div>
             <div style={styles.shopScroll}>
               {shops.map(shop => (
-                /* 🚩 Added onClick here to navigate to shop detail page */
-                <div key={shop._id} style={{ ...styles.shopCard, cursor: 'pointer' }} onClick={() => navigate(`/shop/${shop.name}`)}>
-                  <img src={shop.image} alt={shop.name} style={styles.shopCircle} />
-                  <p style={styles.shopNameText}>{shop.name}</p>
-                  <div style={styles.shopBadge}>
-                    <span style={styles.ratingBox}>⭐ {shop.rating}</span>
+                <div key={shop._id} style={styles.shopCard} onClick={() => navigate(`/shop/${shop._id}`)}>
+                  <div style={styles.shopImgWrapper}>
+                    <img src={shop.image} alt={shop.name} style={styles.shopCircle} />
+                    <div style={styles.ratingBadge}>⭐ {shop.rating}</div>
                   </div>
+                  <p style={styles.shopNameText}>{shop.name}</p>
+                  <p style={styles.shopTime}>20-25 mins</p>
                 </div>
               ))}
             </div>
 
+            {/* 🚩 SECTION: Daily Essentials (Mixed Variety) */}
             <h2 style={styles.sectionTitle}>Daily Essentials</h2>
             <div style={styles.grid}>
-              {products.slice(0, 8).map(item => (
+              {/* Diversity Logic: Brand wise unique items dikhayega */}
+              {products.filter((p, index, self) =>
+                index === self.findIndex((t) => t.brand === p.brand)
+              ).slice(0, 8).map(item => (
                 <ProductCard key={item._id} item={item} onAdd={handleAddToCart} />
               ))}
             </div>
           </>
         ) : (
+          /* Search Comparison Results */
           <div style={styles.comparisonResults}>
-            <h2 style={styles.sectionTitle}>Best Deals for "{searchTerm}"</h2>
-            {filteredDeals.length > 0 ? filteredDeals.map((item, index) => (
+            <h2 style={styles.sectionTitle}>Best deals for "{searchTerm}"</h2>
+            {filteredDeals.map((item, index) => (
               <div key={item._id} style={index === 0 ? styles.bestCard : styles.normalCard}>
-                {index === 0 && <span style={styles.dealTag}>🏆 BEST PRICE</span>}
+                {index === 0 && <span style={styles.dealTag}>🏆 CHEAPEST OPTION</span>}
                 <div style={styles.cardFlex}>
                   <img src={item.image} alt="" style={styles.dealImg} />
                   <div style={styles.dealInfo}>
                     <h4 style={styles.dealTitle}>{item.name}</h4>
-                    <p style={styles.dealShopName}>Sold by: <b>{item.shopName}</b></p>
-                    <p style={styles.distText}>• 1.2 km away</p>
+                    <p style={styles.dealShopName}>at <b>{item.shopName}</b></p>
+                    <p style={styles.distText}>• Lowest price found</p>
                   </div>
                   <div style={styles.dealPriceArea}>
                     <span style={styles.dealPrice}>₹{item.price}</span>
-                    <button
-                      style={index === 0 ? styles.btnBest : styles.btnNormal}
-                      onClick={() => handleAddToCart(item)}
-                    >
-                      ADD
-                    </button>
+                    <button style={index === 0 ? styles.btnBest : styles.btnNormal} onClick={() => handleAddToCart(item)}>ADD</button>
                   </div>
                 </div>
               </div>
-            )) : <p style={{ textAlign: 'center', marginTop: '20px' }}>No local shops found.</p>}
+            ))}
           </div>
         )}
       </main>
 
-      {/* 🚩 FLOATING VIEW CART BAR (Zomato Style) */}
+      {/* 🚩 ZOMATO STYLE FLOATING BAR */}
       {cart.length > 0 && (
         <div style={styles.floatingCart} onClick={() => navigate('/checkout')}>
           <div style={styles.cartInfo}>
-            <span style={styles.cartCount}>{totalItemsInCart} ITEM{totalItemsInCart > 1 ? 'S' : ''}</span>
-            <span style={styles.cartSub}>Items added from local shops</span>
+            <span style={styles.cartCount}>{totalItemsInCart} ITEM{totalItemsInCart > 1 ? 'S' : ''} ADDED</span>
+            <span style={styles.cartSub}>Multiple shops comparison active</span>
           </div>
-          <div style={styles.viewCartBtn}>
-            View Cart 🛒
-          </div>
+          <div style={styles.viewCartBtn}>View Cart →</div>
         </div>
       )}
     </div>
@@ -181,6 +174,7 @@ const Home = () => {
 
 const ProductCard = ({ item, onAdd }) => (
   <div style={styles.pCard}>
+    <div style={styles.cardOffer}>OFFER</div>
     <img src={item.image} alt="" style={styles.pImg} />
     <h4 style={styles.pName}>{item.name}</h4>
     <p style={styles.pShop}>{item.shopName}</p>
@@ -192,54 +186,54 @@ const ProductCard = ({ item, onAdd }) => (
 );
 
 const styles = {
-  container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '80px' },
-  header: { padding: '20px', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 100, borderBottom: '1px solid #f2f2f2' },
-  topRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  locLabel: { fontSize: '10px', fontWeight: '800', color: '#828282' },
-  locName: { margin: '2px 0 15px 0', color: '#1c1c1c', fontSize: '16px' },
-  profileIcon: { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#f3f3f3', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' },
-  userInitial: { color: '#E23744', fontWeight: '900', fontSize: '18px' },
-  searchContainer: { backgroundColor: '#f3f3f3', borderRadius: '12px', padding: '12px' },
+  container: { fontFamily: 'Inter, sans-serif', backgroundColor: '#fff', minHeight: '100vh', paddingBottom: '100px' },
+  header: { padding: '15px 20px', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 1000, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' },
+  topRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
+  logoGroup: { display: 'flex', flexDirection: 'column' },
+  mainLogo: { margin: 0, fontSize: '22px', fontWeight: '900', color: '#1c1c1c', letterSpacing: '-0.5px', cursor: 'pointer' },
+  locName: { fontSize: '11px', fontWeight: '700', color: '#E23744', marginTop: '2px' },
+  profileIcon: { width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#f3f3f3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800' },
+  userInitial: { color: '#E23744' },
+  searchContainer: { backgroundColor: '#F3F4F6', borderRadius: '12px', padding: '12px 15px' },
   searchBar: { width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '14px', fontWeight: '600' },
   main: { padding: '20px' },
-  sectionTitle: { fontSize: '18px', fontWeight: '850', marginBottom: '15px' },
-  shopScroll: { display: 'flex', overflowX: 'auto', gap: '20px', paddingBottom: '20px', scrollbarWidth: 'none' },
-  shopCard: { minWidth: '100px', textAlign: 'center' },
-  shopCircle: { width: '75px', height: '75px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e8e8e8' },
-  shopNameText: { fontSize: '12px', fontWeight: '700', marginTop: '8px' },
-  ratingBox: { backgroundColor: '#257E3E', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' },
+  sectionHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
+  sectionTitle: { fontSize: '19px', fontWeight: '900', color: '#1c1c1c' },
+  seeAll: { color: '#E23744', fontSize: '13px', fontWeight: '700' },
+  shopScroll: { display: 'flex', overflowX: 'auto', gap: '20px', paddingBottom: '10px', scrollbarWidth: 'none' },
+  shopCard: { minWidth: '85px', textAlign: 'center' },
+  shopImgWrapper: { position: 'relative', width: '75px', height: '75px', margin: '0 auto' },
+  shopCircle: { width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f8f8f8' },
+  ratingBadge: { position: 'absolute', bottom: '-5px', left: '15px', right: '15px', backgroundColor: '#257E3E', color: '#fff', fontSize: '9px', fontWeight: '800', borderRadius: '4px', padding: '2px' },
+  shopNameText: { fontSize: '12px', fontWeight: '800', marginTop: '12px', color: '#333' },
+  shopTime: { fontSize: '10px', color: '#888' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' },
-  pCard: { border: '1px solid #f2f2f2', borderRadius: '15px', padding: '10px' },
-  pImg: { width: '100%', height: '80px', objectFit: 'contain' },
-  pName: { fontSize: '13px', fontWeight: '700', margin: '8px 0 2px 0' },
-  pShop: { fontSize: '10px', color: '#888' },
-  pFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' },
+  pCard: { border: '1px solid #f2f2f2', borderRadius: '18px', padding: '12px', position: 'relative', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' },
+  cardOffer: { position: 'absolute', top: '10px', left: '10px', background: '#2563EB', color: '#fff', fontSize: '8px', fontWeight: '900', padding: '2px 6px', borderRadius: '4px' },
+  pImg: { width: '100%', height: '90px', objectFit: 'contain', margin: '10px 0' },
+  pName: { fontSize: '13px', fontWeight: '700', height: '32px', overflow: 'hidden' },
+  pShop: { fontSize: '10px', color: '#999', margin: '4px 0' },
+  pFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' },
   pPrice: { fontWeight: '900', fontSize: '15px' },
-  pAdd: { border: '1px solid #E23744', background: '#fff', color: '#E23744', borderRadius: '6px', padding: '4px 12px', fontWeight: '800' },
-  bestCard: { border: '2px solid #E23744', borderRadius: '16px', padding: '15px', marginBottom: '12px', position: 'relative' },
-  normalCard: { border: '1px solid #e8e8e8', borderRadius: '16px', padding: '15px', marginBottom: '12px' },
+  pAdd: { border: '1px solid #E23744', background: '#fff', color: '#E23744', borderRadius: '8px', padding: '4px 14px', fontWeight: '800', fontSize: '12px' },
+  floatingCart: { position: 'fixed', bottom: '25px', left: '15px', right: '15px', backgroundColor: '#E23744', padding: '14px 20px', borderRadius: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 10px 20px rgba(226, 55, 68, 0.3)', cursor: 'pointer', zIndex: 1000 },
+  cartInfo: { color: '#fff' },
+  cartCount: { display: 'block', fontWeight: '900', fontSize: '14px' },
+  cartSub: { fontSize: '10px', opacity: 0.8 },
+  viewCartBtn: { color: '#fff', fontWeight: '900', fontSize: '14px' },
+  bestCard: { border: '2px solid #E23744', borderRadius: '16px', padding: '15px', marginBottom: '12px', position: 'relative', backgroundColor: '#fff9f9' },
+  normalCard: { border: '1px solid #eee', borderRadius: '16px', padding: '15px', marginBottom: '12px' },
   dealTag: { position: 'absolute', top: '-10px', left: '15px', backgroundColor: '#E23744', color: '#fff', fontSize: '10px', padding: '3px 10px', borderRadius: '20px', fontWeight: '900' },
   cardFlex: { display: 'flex', alignItems: 'center', gap: '15px' },
   dealImg: { width: '50px', height: '50px', objectFit: 'contain' },
   dealInfo: { flex: 1 },
   dealTitle: { fontSize: '14px', fontWeight: '800', margin: 0 },
-  dealShopName: { fontSize: '11px', color: '#4f4f4f' },
-  distText: { fontSize: '10px', color: '#9c9c9c' },
+  dealShopName: { fontSize: '11px', color: '#666' },
+  distText: { fontSize: '10px', color: '#257E3E', fontWeight: '700' },
   dealPriceArea: { textAlign: 'right' },
-  dealPrice: { fontSize: '18px', fontWeight: '900' },
+  dealPrice: { fontSize: '18px', fontWeight: '900', display: 'block' },
   btnBest: { backgroundColor: '#E23744', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 15px', fontWeight: '800' },
-  btnNormal: { backgroundColor: '#1c1c1c', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 15px', fontWeight: '800' },
-
-  floatingCart: {
-    position: 'fixed', bottom: '20px', left: '15px', right: '15px',
-    backgroundColor: '#E23744', padding: '12px 20px', borderRadius: '12px',
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    boxShadow: '0 8px 20px rgba(226, 55, 68, 0.3)', cursor: 'pointer', zIndex: 1000
-  },
-  cartInfo: { display: 'flex', flexDirection: 'column' },
-  cartCount: { color: '#fff', fontWeight: '900', fontSize: '14px' },
-  cartSub: { color: 'rgba(255,255,255,0.8)', fontSize: '10px', fontWeight: '600' },
-  viewCartBtn: { color: '#fff', fontWeight: '800', fontSize: '14px' }
+  btnNormal: { backgroundColor: '#1c1c1c', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 15px', fontWeight: '800' }
 };
 
 export default Home;
