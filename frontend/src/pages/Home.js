@@ -6,22 +6,26 @@ const API_URL = "https://driftkartt.onrender.com";
 
 const Home = () => {
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]); // 🚩 Search results ke liye
-  const [searchTerm, setSearchTerm] = useState(""); // 🚩 Search input track karne ke liye
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [userCity, setUserCity] = useState("Your Neighborhood");
+  const [userCity, setUserCity] = useState("Your Area");
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Location Fetch Logic
+    // 📍 1 & 5. Real-time Location Access
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
+          // Reverse Geocoding to get the actual city name
           const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          setUserCity(res.data.address.city || res.data.address.suburb || "Nearby");
-        } catch (e) { console.log("Location Name Error"); }
-      });
+          setUserCity(res.data.address.city || res.data.address.suburb || res.data.address.state_district || "Nearby");
+        } catch (e) {
+          console.log("Location Name Error");
+          setUserCity("Nearby");
+        }
+      }, () => setUserCity("Nearby"));
     }
 
     const fetchProducts = async () => {
@@ -36,95 +40,78 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  // 🚩 STEP 1: Search Filter Logic
+  // 🔍 3. Live Search Logic (Filters through everything)
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredProducts([]);
-    } else {
-      const results = products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.shopName?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredProducts(results);
-    }
+    const results = products.filter(p =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.shopName?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredProducts(results);
   }, [searchTerm, products]);
 
-  const addToCart = (product) => {
-    localStorage.setItem('cartItem', JSON.stringify(product));
-    navigate('/checkout');
+  // 🛡️ 2 & 4. Login Guard & Cute English Alert
+  const handleAddToCart = (product) => {
+    const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
+
+    if (!isLoggedIn) {
+      alert("Wait a second! ✨ Please log in to your account to start shopping. 🛒");
+      navigate('/login');
+    } else {
+      localStorage.setItem('cartItem', JSON.stringify(product));
+      navigate('/checkout');
+    }
   };
 
-  const renderHorizontalSection = (title, categoryKeywords, icon) => {
-    const sectionProducts = products.filter(p =>
-      categoryKeywords.some(key => p.category?.toLowerCase().includes(key.toLowerCase()))
-    );
-    if (sectionProducts.length === 0) return null;
-
-    return (
-      <div key={title} style={styles.sectionWrapper}>
-        <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>{icon} {title}</h2>
-          <span style={styles.seeAll} onClick={() => navigate(`/listing?cat=${categoryKeywords[0]}`)}>See all</span>
-        </div>
-        <div style={styles.horizontalScroll}>
-          {sectionProducts.map((p) => (
-            <ProductCard key={p._id} p={p} addToCart={addToCart} />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  if (loading) return <div style={styles.loader}>Setting up DriftKart...</div>;
+  if (loading) return <div style={styles.loader}>Getting DriftKart ready for you... ✨</div>;
 
   return (
     <div style={styles.container}>
+      {/* --- HEADER --- */}
       <header style={styles.header}>
         <div style={styles.headerMain}>
           <h1 style={styles.logo} onClick={() => setSearchTerm("")}>Drift<span style={{ color: '#E23744' }}>Kart</span></h1>
           <div style={styles.searchContainer}>
-            {/* 🚩 STEP 2: Search Input Binding */}
             <input
               type="text"
-              placeholder={`Search products in ${userCity}...`}
+              placeholder={`Search essentials in ${userCity}...`}
               style={styles.searchBar}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <div onClick={() => navigate('/login')} style={styles.profileIcon}>👤</div>
         </div>
       </header>
 
-      {/* --- Main Content --- */}
       <main style={styles.main}>
-        {searchTerm.trim() !== "" ? (
-          // 🚩 STEP 3: Agar search kar rahe ho toh Results Grid dikhao
+        {searchTerm !== "" ? (
+          // 🔍 SEARCH RESULTS VIEW
           <div style={{ padding: '20px' }}>
-            <h2 style={styles.sectionTitle}>Search Results ({filteredProducts.length})</h2>
+            <h2 style={styles.sectionTitle}>Yay! We found these:</h2>
             <div style={styles.searchGrid}>
               {filteredProducts.length > 0 ? (
-                filteredProducts.map(p => <ProductCard key={p._id} p={p} addToCart={addToCart} />)
+                filteredProducts.map(p => <ProductCard key={p._id} p={p} onAdd={handleAddToCart} />)
               ) : (
-                <p style={{ color: '#999', marginTop: '20px' }}>Bhai, ye item nahi mila! 😅</p>
+                <p style={styles.noResult}>Oops! No products match your search. 🌸</p>
               )}
             </div>
           </div>
         ) : (
-          // 🚩 Agar search khali hai toh normal sections dikhao
+          // 🏠 HOME SECTIONS VIEW
           <>
             <div style={styles.quickNav}>
               <div style={styles.storeBanner}>
                 <div>
                   <p style={styles.bannerLabel}>DELIVERING TO</p>
-                  <h4 style={styles.bannerTitle}>{userCity} • Neighborhood</h4>
+                  <h4 style={styles.bannerTitle}>📍 {userCity} • Neighborhood</h4>
                 </div>
                 <div style={styles.deliveryBadge}>⚡ 12 MINS</div>
               </div>
             </div>
-            {renderHorizontalSection("Grocery & Kitchen", ["grocery", "atta"], "🥦")}
-            {renderHorizontalSection("Snacks & Drinks", ["snacks", "maggi", "drinks"], "🥤")}
-            {renderHorizontalSection("Personal Care", ["beauty", "personal"], "💄")}
+            {renderSection("Grocery & Kitchen", ["grocery", "atta", "oil"], "🥦", products, handleAddToCart, navigate)}
+            {renderSection("Snacks & Drinks", ["snacks", "maggi", "drinks"], "🥤", products, handleAddToCart, navigate)}
+            {renderSection("Beauty & Personal Care", ["beauty", "soap", "shampoo"], "💄", products, handleAddToCart, navigate)}
           </>
         )}
       </main>
@@ -132,63 +119,76 @@ const Home = () => {
   );
 };
 
-// 🚩 Helper Component for Cards (Clean code)
-const ProductCard = ({ p, addToCart }) => {
-  const discount = p.originalPrice > p.price ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
+// --- HELPER: SECTION RENDERER ---
+const renderSection = (title, keys, icon, products, onAdd, navigate) => {
+  const items = products.filter(p => keys.some(k => p.category?.toLowerCase().includes(k)));
+  if (items.length === 0) return null;
   return (
-    <div style={styles.smallCard} onClick={() => addToCart(p)}>
-      {discount > 0 && <div style={styles.discountBadge}>{discount}% OFF</div>}
-      <div style={styles.timeTagSmall}>⚡ 12 MINS</div>
-      <div style={styles.smallImgWrapper}>
-        <img src={p.image} alt={p.name} style={styles.smallImg} onError={(e) => e.target.src = "https://cdn-icons-png.flaticon.com/512/3081/3081840.png"} />
+    <div style={styles.sectionWrapper}>
+      <div style={styles.sectionHeader}>
+        <h2 style={styles.sectionTitle}>{icon} {title}</h2>
+        <span style={styles.seeAll} onClick={() => navigate(`/listing?cat=${keys[0]}`)}>See all</span>
       </div>
-      <p style={styles.smallName}>{p.name}</p>
-      <p style={styles.smallShopName}>📍 {p.shopName || "Local Store"}</p>
-      <div style={styles.smallPriceRow}>
-        <span style={styles.smallPrice}>₹{p.price}</span>
-        <button style={styles.smallAddBtn}>ADD</button>
+      <div style={styles.horizontalScroll}>
+        {items.map(p => <ProductCard key={p._id} p={p} onAdd={onAdd} />)}
       </div>
     </div>
   );
 };
 
+// --- HELPER: PRODUCT CARD (UI PROTECTED) ---
+const ProductCard = ({ p, onAdd }) => (
+  <div style={styles.smallCard} onClick={() => onAdd(p)}>
+    <div style={styles.timeTagSmall}>12 MINS</div>
+    <div style={styles.smallImgWrapper}>
+      <img
+        src={p.image}
+        alt={p.name}
+        style={styles.smallImg}
+        loading="lazy"
+        onError={(e) => e.target.src = "https://cdn-icons-png.flaticon.com/512/3081/3081840.png"}
+      />
+    </div>
+    <p style={styles.smallName}>{p.name}</p>
+    <p style={styles.smallShopName}>📍 {p.shopName || "Local Partner"}</p>
+    <div style={styles.smallPriceRow}>
+      <span style={styles.smallPrice}>₹{p.price}</span>
+      <button style={styles.smallAddBtn}>ADD</button>
+    </div>
+  </div>
+);
+
 const styles = {
-  // ... (Baaki styles same hain)
-  searchGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))',
-    gap: '15px',
-    marginTop: '20px'
-  },
-  // Add baaki styles jo pehle diye the...
   container: { backgroundColor: '#fff', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
-  header: { backgroundColor: '#fff', padding: '10px 20px', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #f0f0f0' },
-  headerMain: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' },
-  logo: { fontSize: '22px', fontWeight: '900', cursor: 'pointer', margin: 0 },
-  searchContainer: { flexGrow: 1, maxWidth: '600px' },
-  searchBar: { width: '100%', padding: '10px 15px', borderRadius: '10px', border: 'none', backgroundColor: '#F3F5F7', fontSize: '13px', outline: 'none' },
-  quickNav: { padding: '15px 20px' },
-  storeBanner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', backgroundColor: '#F8F9FB', borderRadius: '14px', border: '1px solid #EDF2F7' },
-  bannerLabel: { fontSize: '9px', color: '#888', fontWeight: '800', margin: 0, letterSpacing: '0.5px' },
-  bannerTitle: { fontSize: '13px', fontWeight: '700', margin: 0 },
-  deliveryBadge: { backgroundColor: '#000', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: '900' },
-  main: { paddingBottom: '40px' },
+  header: { padding: '12px 20px', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 100 },
+  headerMain: { display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'space-between' },
+  logo: { fontSize: '22px', fontWeight: '900', margin: 0, cursor: 'pointer' },
+  profileIcon: { cursor: 'pointer', fontSize: '22px', color: '#333' },
+  searchContainer: { flex: 1, maxWidth: '500px' },
+  searchBar: { width: '100%', padding: '12px', borderRadius: '10px', border: 'none', backgroundColor: '#F3F5F7', fontSize: '14px', outline: 'none' },
+  main: { paddingBottom: '30px' },
   sectionWrapper: { padding: '20px 0 0 20px' },
-  sectionHeader: { display: 'flex', justifyContent: 'space-between', paddingRight: '20px', marginBottom: '15px', alignItems: 'center' },
-  sectionTitle: { fontSize: '16px', fontWeight: '800', margin: 0, color: '#1a1a1a' },
-  seeAll: { color: '#E23744', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
+  sectionHeader: { display: 'flex', justifyContent: 'space-between', paddingRight: '20px', marginBottom: '12px', alignItems: 'center' },
+  sectionTitle: { fontSize: '17px', fontWeight: '800', margin: 0 },
+  seeAll: { color: '#E23744', fontWeight: '700', fontSize: '13px', cursor: 'pointer' },
   horizontalScroll: { display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '15px', scrollbarWidth: 'none' },
-  smallCard: { minWidth: '145px', border: '1px solid #f2f2f2', borderRadius: '16px', padding: '10px', position: 'relative', cursor: 'pointer', backgroundColor: '#fff' },
-  smallImgWrapper: { height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' },
+  smallCard: { minWidth: '145px', border: '1px solid #f0f0f0', borderRadius: '16px', padding: '12px', position: 'relative', cursor: 'pointer' },
+  smallImgWrapper: { height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   smallImg: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
-  smallName: { fontSize: '12px', fontWeight: '700', margin: '0 0 3px 0', height: '32px', overflow: 'hidden', color: '#333' },
-  smallShopName: { fontSize: '10px', color: '#E23744', margin: '0 0 10px 0', fontWeight: '600' },
+  smallName: { fontSize: '13px', fontWeight: '700', height: '34px', overflow: 'hidden', marginTop: '10px', color: '#333' },
+  smallShopName: { fontSize: '10px', color: '#E23744', margin: '6px 0', fontWeight: '600' },
   smallPriceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  smallPrice: { fontSize: '14px', fontWeight: '800', color: '#000' },
-  smallAddBtn: { backgroundColor: '#fff', border: '1px solid #E23744', color: '#E23744', borderRadius: '6px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', cursor: 'pointer' },
-  timeTagSmall: { position: 'absolute', top: '8px', left: '8px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '2px 5px', borderRadius: '4px', fontSize: '8px', fontWeight: '900', border: '1px solid #f0f0f0', zIndex: 1 },
-  discountBadge: { position: 'absolute', top: 0, right: 0, backgroundColor: '#2563EB', color: '#fff', padding: '2px 8px', borderBottomLeftRadius: '10px', borderTopRightRadius: '16px', fontSize: '9px', fontWeight: '900', zIndex: 2 },
-  loader: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: '700', color: '#E23744' }
+  smallPrice: { fontWeight: '800', fontSize: '15px' },
+  smallAddBtn: { border: '1px solid #E23744', color: '#E23744', background: '#fff', padding: '5px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '11px' },
+  timeTagSmall: { position: 'absolute', top: '10px', left: '10px', background: 'rgba(255,255,255,0.9)', padding: '2px 6px', borderRadius: '5px', fontSize: '9px', fontWeight: '900', border: '1px solid #eee' },
+  searchGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))', gap: '15px' },
+  noResult: { color: '#888', textAlign: 'center', marginTop: '40px', width: '100%' },
+  quickNav: { padding: '15px 20px' },
+  storeBanner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FB', padding: '15px', borderRadius: '15px', border: '1px solid #eee' },
+  bannerLabel: { fontSize: '9px', color: '#888', fontWeight: '800', margin: 0 },
+  bannerTitle: { fontSize: '14px', fontWeight: '700', margin: 0 },
+  deliveryBadge: { background: '#000', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: '900' },
+  loader: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '16px', fontWeight: '700', color: '#E23744' }
 };
 
 export default Home;
