@@ -25,6 +25,9 @@ router.get('/', async (req, res) => {
     if (category) {
       query.category = category;
     }
+    if (req.query.featured === 'true') {
+      query.featured = true;
+    }
 
     let sortOptions = {};
     if (sort === 'asc') sortOptions.price = 1;

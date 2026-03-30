@@ -19,6 +19,11 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminRoute from "./components/AdminRoute";
 
+// Shopkeeper/Vendor pages
+import ShopLogin from "./pages/ShopLogin";
+import ShopRegister from "./pages/ShopRegister";
+import ShopDashboard from "./pages/ShopDashboard";
+
 function App() {
   return (
     <Router>
@@ -36,6 +41,11 @@ function App() {
         <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
         <Route path="/order/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
+        {/* 🏪 Shopkeeper Routes */}
+        <Route path="/shop/login" element={<ShopLogin />} />
+        <Route path="/shop/register" element={<ShopRegister />} />
+        <Route path="/shop/dashboard" element={<ShopDashboard />} />
 
         {/* 🛡️ Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />

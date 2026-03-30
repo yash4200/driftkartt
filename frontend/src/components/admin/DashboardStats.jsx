@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 export default function DashboardStats() {
-  const [stats, setStats] = useState({ totalUsers: 0, totalProducts: 0, recentOrdersCount: 0 });
+  const [stats, setStats] = useState({ totalUsers: 0, totalProducts: 0, totalOrders: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -32,18 +32,18 @@ export default function DashboardStats() {
   if (error) return <div style={{color: 'var(--admin-danger)'}}>{error}</div>;
 
   return (
-    <div className="stats-grid">
-      <div className="stat-card">
-        <span className="stat-title">Total Users</span>
-        <h3 className="stat-value">{stats.totalUsers}</h3>
+    <div className="admin-stats-grid">
+      <div className="admin-stat-card">
+        <span className="admin-stat-title">Total Users</span>
+        <h3 className="admin-stat-value">{stats.totalUsers}</h3>
       </div>
-      <div className="stat-card">
-        <span className="stat-title">Total Products</span>
-        <h3 className="stat-value">{stats.totalProducts}</h3>
+      <div className="admin-stat-card">
+        <span className="admin-stat-title">Total Products</span>
+        <h3 className="admin-stat-value">{stats.totalProducts}</h3>
       </div>
-      <div className="stat-card">
-        <span className="stat-title">Orders</span>
-        <h3 className="stat-value">{stats.recentOrdersCount}</h3>
+      <div className="admin-stat-card">
+        <span className="admin-stat-title">Orders</span>
+        <h3 className="admin-stat-value">{stats.totalOrders}</h3>
       </div>
     </div>
   );

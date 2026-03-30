@@ -2,12 +2,21 @@ const mongoose = require("mongoose");
 
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  description: { type: String, required: true },
   price: { type: Number, required: true },
-  description: { type: String, default: "A great product" },
-  image: { type: String, default: "https://via.placeholder.com/300" },
-  category: { type: String, required: true, default: "General" },
+  originalPrice: { type: Number },
+  category: { type: String, required: true },
   stock: { type: Number, required: true, default: 0 },
-  shop: String,
+  images: [{ type: String }],
+  shopkeeper: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Shop',
+    required: true
+  },
+  rating: { type: Number, default: 0 },
+  numReviews: { type: Number, default: 0 },
+  featured: { type: Boolean, default: false },
+  tags: [{ type: String }]
 }, { timestamps: true });
 
 module.exports = mongoose.model("Product", productSchema);

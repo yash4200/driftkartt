@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "../axiosConfig";
+import "./Shopkeeper.css";
 
 const initialProducts = [
   { id: 1, name: "Basmati Rice", price: 85, stock: 50, category: "Grocery" },
@@ -16,98 +18,148 @@ const mockOrders = [
 export default function ShopDashboard() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("overview");
-  const [products, setProducts] = useState(initialProducts);
-  const [orders, setOrders] = useState(mockOrders);
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [stats, setStats] = useState({ myProducts: 0, myOrders: 0, myRevenue: 0, pendingOrders: 0 });
   const [showAdd, setShowAdd] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: "", price: "", stock: "", category: "" });
+  const [newProduct, setNewProduct] = useState({ name: "", price: "", stock: "", category: "", description: "Standard description" });
   const [shop, setShop] = useState({ shop: "Your Shop" });
 
   useEffect(() => {
-    const data = localStorage.getItem("shopkeeper");
-    if (!data) navigate("/shop/login");
-    else setShop(JSON.parse(data));
+    fetchDashboardData();
   }, []);
 
-  const addProduct = () => {
-    if (!newProduct.name || !newProduct.price) return alert("Fill name and price");
-    setProducts(p => [...p, { id: Date.now(), ...newProduct, price: Number(newProduct.price), stock: Number(newProduct.stock) }]);
-    setNewProduct({ name: "", price: "", stock: "", category: "" });
-    setShowAdd(false);
+  const fetchDashboardData = async () => {
+    try {
+      // Get Shop Profile
+      const meRes = await axios.get("/api/auth/me");
+      setShop({ shop: meRes.data.name }); // shopkeeper owner name
+      
+      const statsRes = await axios.get("/api/shop/dashboard");
+      setStats(statsRes.data);
+
+      const prodsRes = await axios.get("/api/shop/products");
+      setProducts(prodsRes.data);
+
+      const ordersRes = await axios.get("/api/shop/orders");
+      setOrders(ordersRes.data);
+
+    } catch (err) {
+      if(err.response?.status === 401 || err.response?.status === 403) {
+        navigate("/shop/login");
+      }
+    }
   };
 
-  const deleteProduct = (id) => setProducts(p => p.filter(p => p.id !== id));
+  const addProduct = async () => {
+    if (!newProduct.name || !newProduct.price) return alert("Fill name and price");
+    
+    const numPrice = Number(newProduct.price);
+    const numStock = Number(newProduct.stock);
+    
+    if (isNaN(numPrice) || isNaN(numStock)) {
+      return alert("Price and Stock must be strictly numeric values");
+    }
 
-  const toggleOrder = (id) => setOrders(o => o.map(order =>
-    order.id === id ? { ...order, status: order.status === "Pending" ? "Delivered" : "Pending" } : order
-  ));
+    try {
+      const res = await axios.post("/api/shop/products", {
+        ...newProduct,
+        price: numPrice,
+        stock: numStock,
+        description: newProduct.description || "Standard Item Description"
+      });
+      setProducts(p => [...p, res.data]);
+      setStats(s => ({...s, myProducts: s.myProducts + 1}));
+      setNewProduct({ name: "", price: "", stock: "", category: "", description: "Standard Item Description" });
+      setShowAdd(false);
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to add product");
+    }
+  };
 
-  const pendingOrders = orders.filter(o => o.status === "Pending").length;
-  const totalRevenue = orders.filter(o => o.status === "Delivered").reduce((s, o) => s + o.total, 0);
+  const deleteProduct = async (id) => {
+    try {
+      await axios.delete(`/api/shop/products/${id}`);
+      setProducts(p => p.filter(p => p._id !== id));
+      setStats(s => ({...s, myProducts: s.myProducts - 1}));
+    } catch (err) {
+      alert("Failed to delete product");
+    }
+  };
+
+  const toggleOrder = async (id, currentStatus) => {
+    const nextStatus = currentStatus === "pending" ? "delivered" : "pending";
+    try {
+      await axios.put(`/api/shop/orders/${id}/status`, { status: nextStatus });
+      setOrders(o => o.map(order => order._id === id ? { ...order, status: nextStatus } : order));
+      fetchDashboardData(); // Refresh stats
+    } catch (err) {
+      alert("Failed to update order status");
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="shop-wrapper">
       {/* Top Nav */}
-      <div className="bg-[#13131a] border-b border-[#2a2a3a] px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-orange-500 rounded-xl flex items-center justify-center">🏪</div>
-          <div>
-            <div className="font-bold text-lg">{shop.shop}</div>
-            <div className="text-gray-500 text-xs">Shopkeeper Dashboard</div>
+      <nav className="shop-dash-nav">
+        <div style={{display:'flex', alignItems:'center', gap:'var(--space-3)'}}>
+          <div className="shop-icon-box" style={{width:'40px', height:'40px', fontSize:'1.2rem'}}>🏪</div>
+          <div className="shop-dash-user">
+            <span className="shop-dash-name">{shop.shop}</span>
+            <span className="shop-dash-role">Shopkeeper Dashboard</span>
           </div>
         </div>
         <button
           onClick={() => { localStorage.removeItem("shopkeeper"); navigate("/shop/login"); }}
-          className="text-gray-500 hover:text-red-400 text-sm transition"
+          className="shop-dash-logout"
         >
           Logout
         </button>
-      </div>
+      </nav>
 
       {/* Tabs */}
-      <div className="flex gap-1 px-6 pt-6">
+      <div className="shop-dash-tabs">
         {["overview", "products", "orders"].map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-5 py-2 rounded-xl text-sm font-semibold capitalize transition
-              ${tab === t ? "bg-orange-500 text-white" : "bg-[#13131a] text-gray-400 hover:text-white border border-[#2a2a3a]"}`}
+            className={`shop-tab-btn ${tab === t ? "active" : ""}`}
           >
             {t}
           </button>
         ))}
       </div>
 
-      <div className="px-6 py-6 max-w-3xl">
+      <main className="shop-dash-content">
 
         {/* OVERVIEW */}
         {tab === "overview" && (
           <div>
-            <h2 className="text-2xl font-extrabold mb-6">Overview</h2>
-            <div className="grid grid-cols-3 gap-4 mb-8">
+            <h2 className="shop-dash-header">Overview</h2>
+            <div className="stat-grid">
               {[
-                ["📦", "Total Products", products.length, ""],
-                ["🕐", "Pending Orders", pendingOrders, "text-orange-400"],
-                ["💰", "Revenue", `₹${totalRevenue}`, "text-green-400"],
+                ["📦", "Total Products", stats.myProducts, "var(--primary)"],
+                ["🕐", "Pending Orders", stats.pendingOrders, "#f59e0b"],
+                ["💰", "Revenue", `₹${stats.myRevenue}`, "#10b981"],
               ].map(([icon, label, val, color]) => (
-                <div key={label} className="bg-[#13131a] border border-[#2a2a3a] rounded-2xl p-5">
-                  <div className="text-2xl mb-2">{icon}</div>
-                  <div className={`text-2xl font-extrabold ${color}`}>{val}</div>
-                  <div className="text-gray-500 text-sm mt-1">{label}</div>
+                <div key={label} className="stat-card">
+                  <div className="stat-icon">{icon}</div>
+                  <div className="stat-val" style={{color}}>{val}</div>
+                  <div className="stat-label">{label}</div>
                 </div>
               ))}
             </div>
 
             {/* Recent Orders */}
-            <h3 className="font-bold text-lg mb-4">Recent Orders</h3>
-            <div className="flex flex-col gap-3">
+            <h3 style={{fontFamily:'var(--font-display)', fontSize:'1.25rem', marginBottom:'var(--space-4)'}}>Recent Orders</h3>
+            <div className="list-container">
               {orders.slice(0, 3).map(o => (
-                <div key={o.id} className="bg-[#13131a] border border-[#2a2a3a] rounded-xl p-4 flex justify-between items-center">
+                <div key={o._id} className="list-item-card">
                   <div>
-                    <span className="font-semibold">{o.product}</span>
-                    <span className="text-gray-500 text-sm ml-2">by {o.customer}</span>
+                    <span style={{fontWeight:600}}>{o.items.length > 0 ? o.items[0].product?.name : 'Items'}</span>
+                    <span style={{color:'var(--text-muted)', fontSize:'0.85rem', marginLeft:'var(--space-2)'}}>by {o.user?.name || o.customer}</span>
                   </div>
-                  <span className={`text-xs px-3 py-1 rounded-full font-semibold
-                    ${o.status === "Pending" ? "bg-orange-500/20 text-orange-400" : "bg-green-500/20 text-green-400"}`}>
+                  <span className={`item-badge ${o.status.toLowerCase()}`}>
                     {o.status}
                   </span>
                 </div>
@@ -119,40 +171,41 @@ export default function ShopDashboard() {
         {/* PRODUCTS */}
         {tab === "products" && (
           <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-extrabold">My Products</h2>
-              <button onClick={() => setShowAdd(!showAdd)}
-                className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 rounded-xl text-sm font-semibold transition">
+            <div className="shop-dash-header">
+              <h2>My Products</h2>
+              <button onClick={() => setShowAdd(!showAdd)} className="shop-btn-primary" style={{marginTop:0, padding:'8px 16px', fontSize:'0.9rem'}}>
                 + Add Product
               </button>
             </div>
 
             {showAdd && (
-              <div className="bg-[#13131a] border border-orange-500/30 rounded-2xl p-5 mb-6 flex flex-col gap-3">
-                <h3 className="font-bold">New Product</h3>
-                {[["Product Name", "name"], ["Price (₹)", "price"], ["Stock (qty)", "stock"], ["Category", "category"]].map(([ph, key]) => (
-                  <input key={key} placeholder={ph} value={newProduct[key]}
-                    onChange={e => setNewProduct(p => ({ ...p, [key]: e.target.value }))}
-                    className="bg-[#0a0a0f] border border-[#2a2a3a] rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none focus:border-orange-500 transition"
-                  />
-                ))}
-                <div className="flex gap-3">
-                  <button onClick={addProduct} className="flex-1 bg-orange-500 hover:bg-orange-400 text-white py-2 rounded-xl font-semibold transition">Add</button>
-                  <button onClick={() => setShowAdd(false)} className="flex-1 bg-[#0a0a0f] border border-[#2a2a3a] text-gray-400 py-2 rounded-xl transition">Cancel</button>
+              <div className="add-product-panel">
+                <h3 style={{marginBottom:'var(--space-4)'}}>New Product</h3>
+                <div className="add-product-grid">
+                  {[["Product Name", "name", "text"], ["Price (₹)", "price", "number"], ["Stock (qty)", "stock", "number"], ["Category", "category", "text"]].map(([ph, key, type]) => (
+                    <input key={key} type={type} placeholder={ph} value={newProduct[key]}
+                      onChange={e => setNewProduct(p => ({ ...p, [key]: e.target.value }))}
+                      className="shop-input"
+                    />
+                  ))}
+                </div>
+                <div style={{display:'flex', gap:'var(--space-3)'}}>
+                  <button onClick={addProduct} className="shop-btn-primary" style={{margin:0, flex:1}}>Add Product</button>
+                  <button onClick={() => setShowAdd(false)} className="action-btn-danger" style={{flex:1, border:'1px solid var(--border)', color:'var(--text-muted)'}}>Cancel</button>
                 </div>
               </div>
             )}
 
-            <div className="flex flex-col gap-3">
+            <div className="list-container">
               {products.map(p => (
-                <div key={p.id} className="bg-[#13131a] border border-[#2a2a3a] rounded-xl p-4 flex items-center justify-between hover:border-orange-500/50 transition">
+                <div key={p.id} className="list-item-card" style={{alignItems:'center'}}>
                   <div>
-                    <div className="font-semibold">{p.name}</div>
-                    <div className="text-gray-500 text-sm">{p.category} · Stock: {p.stock}</div>
+                    <div style={{fontWeight:700, fontSize:'1.1rem'}}>{p.name}</div>
+                    <div style={{color:'var(--text-muted)', fontSize:'0.85rem', marginTop:'2px'}}>{p.category} &middot; Stock: {p.stock}</div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-orange-400 font-bold text-lg">₹{p.price}</span>
-                    <button onClick={() => deleteProduct(p.id)} className="text-red-400 hover:text-red-300 text-sm transition">Delete</button>
+                  <div style={{display:'flex', alignItems:'center', gap:'var(--space-6)'}}>
+                    <span style={{color:'var(--primary)', fontWeight:800, fontSize:'1.25rem'}}>₹{p.price}</span>
+                    <button onClick={() => deleteProduct(p.id)} className="action-btn-danger">Delete</button>
                   </div>
                 </div>
               ))}
@@ -163,23 +216,24 @@ export default function ShopDashboard() {
         {/* ORDERS */}
         {tab === "orders" && (
           <div>
-            <h2 className="text-2xl font-extrabold mb-6">Orders</h2>
-            <div className="flex flex-col gap-3">
+            <h2 className="shop-dash-header">Orders</h2>
+            <div className="list-container">
               {orders.map(o => (
-                <div key={o.id} className="bg-[#13131a] border border-[#2a2a3a] rounded-xl p-5">
-                  <div className="flex justify-between items-start mb-3">
+                <div key={o._id} className="list-item-card" style={{flexDirection:'column', alignItems:'stretch', gap:'var(--space-3)', padding:'var(--space-5)'}}>
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
                     <div>
-                      <span className="font-bold">{o.id}</span>
-                      <span className="text-gray-500 text-sm ml-2">{o.product} × {o.qty}</span>
+                      <span style={{fontWeight:800, fontSize:'1.1rem'}}>{o._id.substring(o._id.length - 6).toUpperCase()}</span>
+                      <span style={{color:'var(--text-muted)', marginLeft:'var(--space-2)'}}>{o.items.length > 0 ? o.items[0].product?.name : 'Items'} &times; {o.items.length > 0 ? o.items[0].quantity : 1}</span>
                     </div>
-                    <span className="text-green-400 font-bold">₹{o.total}</span>
+                    <span style={{color:'#10b981', fontWeight:800, fontSize:'1.1rem'}}>₹{o.totalAmount || o.total}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 text-sm">Customer: {o.customer}</span>
-                    <button onClick={() => toggleOrder(o.id)}
-                      className={`text-xs px-4 py-1.5 rounded-full font-semibold transition cursor-pointer
-                        ${o.status === "Pending" ? "bg-orange-500/20 text-orange-400 hover:bg-orange-500/40" : "bg-green-500/20 text-green-400 hover:bg-green-500/40"}`}>
-                      {o.status} {o.status === "Pending" ? "→ Mark Delivered" : "✓"}
+                  <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:'1px solid var(--border)', paddingTop:'var(--space-3)'}}>
+                    <span style={{color:'var(--text-muted)', fontSize:'0.9rem'}}>Customer: <strong style={{color:'var(--text)'}}>{o.user?.name || o.customer}</strong></span>
+                    <button onClick={() => toggleOrder(o._id, o.status)}
+                      className={`item-badge ${o.status.toLowerCase()}`}
+                      style={{cursor:'pointer', border:'none', outline:'none', fontSize:'0.85rem', padding:'6px 16px', transition:'all var(--transition-fast)'}}
+                    >
+                      {o.status} {o.status === "pending" ? "→ Mark Delivered" : (o.status === "delivered" ? "→ Mark Pending" : "✓")}
                     </button>
                   </div>
                 </div>
@@ -187,7 +241,7 @@ export default function ShopDashboard() {
             </div>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

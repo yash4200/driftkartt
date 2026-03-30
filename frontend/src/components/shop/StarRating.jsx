@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./Components.css";
+import "./StarRating.css";
 
 export default function StarRating({ rating = 0, onRatingChange, readonly = false }) {
   const [hover, setHover] = useState(0);

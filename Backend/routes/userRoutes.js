@@ -14,7 +14,7 @@ router.get('/profile', protect, async (req, res) => {
   }
 });
 
-// PUT /api/user/profile - update name, email
+// PUT /api/user/profile - update name, email, phone, address
 router.put('/profile', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -22,14 +22,18 @@ router.put('/profile', protect, async (req, res) => {
 
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
+    user.phone = req.body.phone || user.phone;
+    if (req.body.address) {
+      user.address = {
+        street: req.body.address.street || user.address?.street,
+        city: req.body.address.city || user.address?.city,
+        state: req.body.address.state || user.address?.state,
+        pincode: req.body.address.pincode || user.address?.pincode,
+      };
+    }
 
     const updatedUser = await user.save();
-    res.json({
-      _id: updatedUser._id,
-      name: updatedUser.name,
-      email: updatedUser.email,
-      isAdmin: updatedUser.isAdmin,
-    });
+    res.json(updatedUser);
   } catch (err) {
     res.status(500).json({ error: "Server error updating profile" });
   }

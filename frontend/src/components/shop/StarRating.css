@@ -1,0 +1,38 @@
+.star-rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.star-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform var(--transition-fast);
+}
+
+.star-btn:disabled {
+  cursor: default;
+}
+
+.star-btn:not(:disabled):hover {
+  transform: scale(1.2);
+}
+
+.star {
+  font-size: 1.25rem;
+  color: var(--border);
+  transition: color var(--transition-fast);
+}
+
+.star-btn.on .star {
+  color: #fbbf24; /* Yellow/Orange star color */
+}
+
+.rating-num {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-left: var(--space-2);
+}

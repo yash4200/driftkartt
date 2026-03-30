@@ -1,54 +1,69 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "../axiosConfig";
+import "./Shopkeeper.css";
 
 export default function ShopLogin() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (phone && password) {
-      localStorage.setItem("shopkeeper", JSON.stringify({ phone, shop: "Sharma General Store" }));
-      navigate("/shop/dashboard");
+      try {
+        const res = await axios.post("/api/auth/login", { email: phone, password });
+        if (res.data.isShopkeeper) {
+          localStorage.setItem("token", res.data.token);
+          localStorage.setItem("shopkeeper", JSON.stringify({ phone, shop: res.data.name }));
+          navigate("/shop/dashboard");
+        } else {
+          alert("Account is not authorized as a Shopkeeper.");
+        }
+      } catch (err) {
+        alert(err.response?.data?.message || "Invalid credentials");
+      }
     } else {
       alert("Please fill all fields");
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white flex flex-col items-center justify-center px-4">
-      <div className="flex items-center gap-3 mb-10">
-        <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center text-xl">🏪</div>
-        <h1 className="font-extrabold text-3xl tracking-tight">DriftKart <span className="text-orange-500">for Shops</span></h1>
+    <div className="shop-wrapper shop-auth-container">
+      <div className="shop-logo-header">
+        <div className="shop-icon-box">🏪</div>
+        <h1 className="shop-logo-text">DriftKart <span className="shop-logo-highlight">for Shops</span></h1>
       </div>
 
-      <div className="w-full max-w-sm bg-[#13131a] border border-[#2a2a3a] rounded-2xl p-8 flex flex-col gap-4">
-        <h2 className="text-xl font-bold mb-2">Shopkeeper Login</h2>
+      <div className="shop-auth-card">
+        <h2 className="shop-auth-title">Shopkeeper Login</h2>
 
-        <input
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          placeholder="Phone Number"
-          className="bg-[#0a0a0f] border border-[#2a2a3a] rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none focus:border-orange-500 transition"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder="Password"
-          className="bg-[#0a0a0f] border border-[#2a2a3a] rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none focus:border-orange-500 transition"
-        />
+        <div style={{display:'flex', flexDirection:'column', gap:'var(--space-4)'}}>
+          <div className="shop-input-wrapper">
+            <input
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="Phone Number"
+              className="shop-input"
+            />
+          </div>
+          <div className="shop-input-wrapper">
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Password"
+              className="shop-input"
+            />
+          </div>
+        </div>
 
-        <button
-          onClick={handleLogin}
-          className="bg-orange-500 hover:bg-orange-400 text-white py-3 rounded-xl font-bold transition mt-2"
-        >
-          Login →
+        <button onClick={handleLogin} className="shop-btn-primary">
+          Login &rarr;
         </button>
 
-        <p className="text-gray-500 text-sm text-center">
+        <p className="shop-auth-footer">
           New shop?{" "}
-          <span onClick={() => navigate("/shop/register")} className="text-orange-400 cursor-pointer hover:underline">
+          <span onClick={() => navigate("/shop/register")} className="shop-auth-link">
             Register here
           </span>
         </p>
