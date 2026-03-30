@@ -6,12 +6,14 @@ const API_URL = "https://driftkartt.onrender.com";
 
 const Home = () => {
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]); // 🚩 Search results ke liye
+  const [searchTerm, setSearchTerm] = useState(""); // 🚩 Search input track karne ke liye
   const [loading, setLoading] = useState(true);
   const [userCity, setUserCity] = useState("Your Neighborhood");
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🚩 Real-time Location Fetch (City Name)
+    // Location Fetch Logic
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         try {
@@ -34,6 +36,20 @@ const Home = () => {
     fetchProducts();
   }, []);
 
+  // 🚩 STEP 1: Search Filter Logic
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredProducts([]);
+    } else {
+      const results = products.filter(p =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.shopName?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredProducts(results);
+    }
+  }, [searchTerm, products]);
+
   const addToCart = (product) => {
     localStorage.setItem('cartItem', JSON.stringify(product));
     navigate('/checkout');
@@ -43,88 +59,108 @@ const Home = () => {
     const sectionProducts = products.filter(p =>
       categoryKeywords.some(key => p.category?.toLowerCase().includes(key.toLowerCase()))
     );
-
     if (sectionProducts.length === 0) return null;
 
     return (
       <div key={title} style={styles.sectionWrapper}>
         <div style={styles.sectionHeader}>
           <h2 style={styles.sectionTitle}>{icon} {title}</h2>
-          {/* 🚩 FIX: Iska path App.js ke '/listing' se match kar diya hai ab 404 nahi aayega */}
-          <span style={styles.seeAll} onClick={() => navigate(`/listing?cat=${categoryKeywords[0]}`)}>
-            See all
-          </span>
+          <span style={styles.seeAll} onClick={() => navigate(`/listing?cat=${categoryKeywords[0]}`)}>See all</span>
         </div>
         <div style={styles.horizontalScroll}>
-          {sectionProducts.map((p) => {
-            const discount = p.originalPrice > p.price ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
-            return (
-              <div key={p._id} style={styles.smallCard} onClick={() => addToCart(p)}>
-                {discount > 0 && <div style={styles.discountBadge}>{discount}% OFF</div>}
-                <div style={styles.timeTagSmall}>⚡ 12 MINS</div>
-                <div style={styles.smallImgWrapper}>
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    style={styles.smallImg}
-                    loading="lazy" // Instant loading optimization
-                    onError={(e) => {
-                      e.target.src = "https://cdn-icons-png.flaticon.com/512/3081/3081840.png"; // Cute Grocery Icon as fallback
-                    }}
-                  />
-                </div>
-                <p style={styles.smallName}>{p.name}</p>
-                {/* 🚩 Dynamic Shop Name Display */}
-                <p style={styles.smallShopName}>📍 {p.shopName || "Local Store"}</p>
-                <div style={styles.smallPriceRow}>
-                  <span style={styles.smallPrice}>₹{p.price}</span>
-                  <button style={styles.smallAddBtn}>ADD</button>
-                </div>
-              </div>
-            );
-          })}
+          {sectionProducts.map((p) => (
+            <ProductCard key={p._id} p={p} addToCart={addToCart} />
+          ))}
         </div>
       </div>
     );
   };
 
-  if (loading) return <div style={styles.loader}>Setting up DriftKart for you...</div>;
+  if (loading) return <div style={styles.loader}>Setting up DriftKart...</div>;
 
   return (
     <div style={styles.container}>
       <header style={styles.header}>
         <div style={styles.headerMain}>
-          <h1 style={styles.logo} onClick={() => window.location.reload()}>Drift<span style={{ color: '#E23744' }}>Kart</span></h1>
+          <h1 style={styles.logo} onClick={() => setSearchTerm("")}>Drift<span style={{ color: '#E23744' }}>Kart</span></h1>
           <div style={styles.searchContainer}>
-            <input type="text" placeholder={`Search in ${userCity}...`} style={styles.searchBar} />
+            {/* 🚩 STEP 2: Search Input Binding */}
+            <input
+              type="text"
+              placeholder={`Search products in ${userCity}...`}
+              style={styles.searchBar}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
       </header>
 
-      <div style={styles.quickNav}>
-        <div style={styles.storeBanner}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '24px' }}>🏠</span>
-            <div>
-              <p style={styles.bannerLabel}>DELIVERING TO</p>
-              <h4 style={styles.bannerTitle}>{userCity} • Neighborhood</h4>
+      {/* --- Main Content --- */}
+      <main style={styles.main}>
+        {searchTerm.trim() !== "" ? (
+          // 🚩 STEP 3: Agar search kar rahe ho toh Results Grid dikhao
+          <div style={{ padding: '20px' }}>
+            <h2 style={styles.sectionTitle}>Search Results ({filteredProducts.length})</h2>
+            <div style={styles.searchGrid}>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map(p => <ProductCard key={p._id} p={p} addToCart={addToCart} />)
+              ) : (
+                <p style={{ color: '#999', marginTop: '20px' }}>Bhai, ye item nahi mila! 😅</p>
+              )}
             </div>
           </div>
-          <div style={styles.deliveryBadge}>⚡ 12 MINS</div>
-        </div>
-      </div>
-
-      <main style={styles.main}>
-        {renderHorizontalSection("Grocery & Kitchen", ["grocery", "atta"], "🥦")}
-        {renderHorizontalSection("Snacks & Drinks", ["snacks", "maggi", "drinks"], "🥤")}
-        {renderHorizontalSection("Personal Care", ["beauty", "personal"], "💄")}
+        ) : (
+          // 🚩 Agar search khali hai toh normal sections dikhao
+          <>
+            <div style={styles.quickNav}>
+              <div style={styles.storeBanner}>
+                <div>
+                  <p style={styles.bannerLabel}>DELIVERING TO</p>
+                  <h4 style={styles.bannerTitle}>{userCity} • Neighborhood</h4>
+                </div>
+                <div style={styles.deliveryBadge}>⚡ 12 MINS</div>
+              </div>
+            </div>
+            {renderHorizontalSection("Grocery & Kitchen", ["grocery", "atta"], "🥦")}
+            {renderHorizontalSection("Snacks & Drinks", ["snacks", "maggi", "drinks"], "🥤")}
+            {renderHorizontalSection("Personal Care", ["beauty", "personal"], "💄")}
+          </>
+        )}
       </main>
     </div>
   );
 };
 
+// 🚩 Helper Component for Cards (Clean code)
+const ProductCard = ({ p, addToCart }) => {
+  const discount = p.originalPrice > p.price ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
+  return (
+    <div style={styles.smallCard} onClick={() => addToCart(p)}>
+      {discount > 0 && <div style={styles.discountBadge}>{discount}% OFF</div>}
+      <div style={styles.timeTagSmall}>⚡ 12 MINS</div>
+      <div style={styles.smallImgWrapper}>
+        <img src={p.image} alt={p.name} style={styles.smallImg} onError={(e) => e.target.src = "https://cdn-icons-png.flaticon.com/512/3081/3081840.png"} />
+      </div>
+      <p style={styles.smallName}>{p.name}</p>
+      <p style={styles.smallShopName}>📍 {p.shopName || "Local Store"}</p>
+      <div style={styles.smallPriceRow}>
+        <span style={styles.smallPrice}>₹{p.price}</span>
+        <button style={styles.smallAddBtn}>ADD</button>
+      </div>
+    </div>
+  );
+};
+
 const styles = {
-  // --- Sab Styles Same Hain, Bas Discount aur Location Tag Add Kiya Hai ---
+  // ... (Baaki styles same hain)
+  searchGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))',
+    gap: '15px',
+    marginTop: '20px'
+  },
+  // Add baaki styles jo pehle diye the...
   container: { backgroundColor: '#fff', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
   header: { backgroundColor: '#fff', padding: '10px 20px', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #f0f0f0' },
   headerMain: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' },
@@ -142,7 +178,7 @@ const styles = {
   sectionTitle: { fontSize: '16px', fontWeight: '800', margin: 0, color: '#1a1a1a' },
   seeAll: { color: '#E23744', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
   horizontalScroll: { display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '15px', scrollbarWidth: 'none' },
-  smallCard: { minWidth: '145px', maxWidth: '145px', border: '1px solid #f2f2f2', borderRadius: '16px', padding: '10px', position: 'relative', cursor: 'pointer', backgroundColor: '#fff' },
+  smallCard: { minWidth: '145px', border: '1px solid #f2f2f2', borderRadius: '16px', padding: '10px', position: 'relative', cursor: 'pointer', backgroundColor: '#fff' },
   smallImgWrapper: { height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' },
   smallImg: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
   smallName: { fontSize: '12px', fontWeight: '700', margin: '0 0 3px 0', height: '32px', overflow: 'hidden', color: '#333' },
