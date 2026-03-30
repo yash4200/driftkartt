@@ -15,7 +15,7 @@ const Product = mongoose.model('Product', new mongoose.Schema({
     name: String, brand: String, price: Number, originalPrice: Number, category: String, image: String, shopId: mongoose.Schema.Types.ObjectId, shopName: String, stock: Number
 }));
 
-// 🚩 Step 1: Base Shops (Zomato Style Brands)
+// 🚩 Step 1: Base Shops
 const baseShops = [
     { name: "Gupta General Store", cat: "Grocery & Snacks", rate: 4.5, img: "https://cdn-icons-png.flaticon.com/512/3081/3081840.png" },
     { name: "Sharma All In One", cat: "Supermarket", rate: 4.2, img: "https://cdn-icons-png.flaticon.com/512/606/606547.png" },
@@ -24,14 +24,14 @@ const baseShops = [
     { name: "Quick Mart", cat: "Daily Needs", rate: 3.9, img: "https://cdn-icons-png.flaticon.com/512/3711/3711310.png" }
 ];
 
-// 🚩 Step 2: Base Templates (Daily Items)
+// 🚩 Step 2: Base Templates with Realistic Variants
 const templates = [
-    { name: "Aashirvaad Atta", brand: "Aashirvaad", basePrice: 240, baseOp: 290, category: "Grocery", img: "https://m.media-amazon.com/images/I/718Vv7u9PPL._SL1500_.jpg" },
-    { name: "Fortune Oil", brand: "Fortune", basePrice: 110, baseOp: 160, category: "Grocery", img: "https://m.media-amazon.com/images/I/61S19S00R8L._SL1000_.jpg" },
-    { name: "Maggi Noodles", brand: "Maggi", basePrice: 14, baseOp: 15, category: "Snacks", img: "https://m.media-amazon.com/images/I/81Uv5vVv8tL._SL1500_.jpg" },
-    { name: "Classmate Notebook", brand: "Classmate", basePrice: 50, baseOp: 75, category: "Stationery", img: "https://m.media-amazon.com/images/I/61y88y10A9L._SL1500_.jpg" },
-    { name: "Dove Soap", brand: "Dove", basePrice: 50, baseOp: 65, category: "Beauty", img: "https://m.media-amazon.com/images/I/51rI9S00R8L._SL1000_.jpg" },
-    { name: "Coca Cola", brand: "Coke", basePrice: 35, baseOp: 45, category: "Drinks", img: "https://m.media-amazon.com/images/I/71K-K+X+XTL._SL1500_.jpg" }
+    { name: "Aashirvaad Atta", brand: "Aashirvaad", basePrice: 240, baseOp: 290, category: "Grocery", img: "https://m.media-amazon.com/images/I/718Vv7u9PPL._SL1500_.jpg", variants: ["1kg", "5kg Economy", "10kg", "Multigrain", "Sharbati"] },
+    { name: "Fortune Oil", brand: "Fortune", basePrice: 110, baseOp: 160, category: "Grocery", img: "https://m.media-amazon.com/images/I/61S19S00R8L._SL1000_.jpg", variants: ["1L Pouch", "1L Bottle", "5L Jar", "Kachi Ghani", "Refined"] },
+    { name: "Maggi Noodles", brand: "Maggi", basePrice: 14, baseOp: 15, category: "Snacks", img: "https://m.media-amazon.com/images/I/81Uv5vVv8tL._SL1500_.jpg", variants: ["Masala 70g", "Atta Noodles", "Special Masala", "12-Pack Family", "Oats Noodles"] },
+    { name: "Classmate Notebook", brand: "Classmate", basePrice: 50, baseOp: 75, category: "Stationery", img: "https://m.media-amazon.com/images/I/61y88y10A9L._SL1500_.jpg", variants: ["Spiral Bound", "Single Line", "Unruled", "A4 Size", "Practical File"] },
+    { name: "Dove Soap", brand: "Dove", basePrice: 50, baseOp: 65, category: "Beauty", img: "https://m.media-amazon.com/images/I/51rI9S00R8L._SL1000_.jpg", variants: ["Cream Bar", "Sensitive", "Fresh Touch", "Pink Rosa", "Travel Pack"] },
+    { name: "Coca Cola", brand: "Coke", basePrice: 35, baseOp: 45, category: "Drinks", img: "https://m.media-amazon.com/images/I/71K-K+X+XTL._SL1500_.jpg", variants: ["250ml Can", "500ml Pet", "1.25L Bottle", "Diet Coke", "Zero Sugar"] }
 ];
 
 const seed = async () => {
@@ -48,28 +48,33 @@ const seed = async () => {
         })));
         console.log("✅ Shops Created!");
 
-        // 📦 Bulk Products generate karo with Comparison Logic
         let bulkProducts = [];
 
         templates.forEach((t) => {
-            // Har product ko kam se kam 3-4 shops mein daalo alag price pe
-            createdShops.forEach((shop, index) => {
-                // Algorithm: Price har shop pe +/- 5 rupees hoga comparison ke liye
-                const priceVariation = Math.floor(Math.random() * 10) - 5;
+            // Har product ko sabhi relevant shops mein daalo (Comparison ke liye)
+            createdShops.forEach((shop) => {
 
-                for (let i = 1; i <= 5; i++) { // 5 variants per product per shop
+                // Logic: Srif wahi products shops mein daalo jo shop ki category se match karein
+                // Magar diversity ke liye hum general stores mein sab kuch daal rahe hain
+                const isStationeryShop = shop.name.includes("Book");
+                const isPharmacy = shop.name.includes("Medical");
+
+                t.variants.forEach((vName, i) => {
+                    // Random price logic to show comparison in search
+                    const priceVariation = Math.floor(Math.random() * 12) - 6; // +/- 6 rupees
+
                     bulkProducts.push({
-                        name: `${t.name} (Pack ${i})`,
+                        name: `${t.name} (${vName})`,
                         brand: t.brand,
-                        price: t.basePrice + priceVariation + (i * 2),
-                        originalPrice: t.baseOp + (i * 3),
+                        price: t.basePrice + priceVariation + (i * 10),
+                        originalPrice: t.baseOp + (i * 15),
                         category: t.category,
                         image: t.img,
                         shopId: shop._id,
                         shopName: shop.name,
-                        stock: 50 + i
+                        stock: 40 + (i * 5)
                     });
-                }
+                });
             });
         });
 

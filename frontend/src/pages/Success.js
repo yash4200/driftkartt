@@ -1,78 +1,116 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Success = () => {
   const navigate = useNavigate();
-  const [distance, setDistance] = useState(null);
 
+  // 🚩 CSS Injection: Taaki keyframes code ke andar hi chalein
   useEffect(() => {
-    // Randomly calculate distance between 1.5 to 4.5 km
-    const dist = (Math.random() * (4.5 - 1.5) + 1.5).toFixed(1);
-    setDistance(dist);
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = `
+      @keyframes drive {
+        0% { left: 5%; opacity: 1; }
+        90% { left: 85%; opacity: 1; }
+        100% { left: 90%; opacity: 0; }
+      }
+      @keyframes pop {
+        0% { transform: scale(0.8); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      @keyframes confetti {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100px) rotate(360deg); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(styleSheet);
   }, []);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        {/* --- Animated Icon Section --- */}
-        <div style={styles.animationIcon}>
-          <div style={styles.scooterAnim}>🛵💨</div>
-        </div>
-
-        <h1 style={styles.thankYou}>Order Placed!</h1>
-        <p style={styles.subtitle}>Arriving in <span style={{ color: '#2E7D32', fontWeight: '800' }}>12 Mins</span></p>
-
-        {/* --- Blinkit Style Store Info --- */}
-        <div style={styles.storeCard}>
-          <div style={styles.storeInfo}>
-            <span style={styles.storeIcon}>🏬</span>
-            <div>
-              <p style={styles.storeLabel}>Preparing at Store</p>
-              <p style={styles.storeName}>DriftKart Dark Store - Near You</p>
-            </div>
-          </div>
-          <div style={styles.distanceBadge}>{distance} km away</div>
-        </div>
-
-        <div style={styles.detailsBox}>
-          <p style={styles.detailText}>A notification will be sent when your rider is nearby.</p>
-        </div>
-
-        <button onClick={() => navigate('/orders')} style={styles.trackBtn}>
-          Track Order Live
-        </button>
-
-        <p onClick={() => navigate('/')} style={styles.goHome}>Continue Shopping</p>
+    <div style={styles.successPage}>
+      {/* 🎉 Confetti Effect */}
+      <div style={styles.confettiWrap}>
+        {[...Array(10)].map((_, i) => (
+          <div key={i} style={{ ...styles.dot, left: `${i * 10}%`, animationDelay: `${i * 0.2}s` }}>✨</div>
+        ))}
       </div>
+
+      <div style={styles.animContainer}>
+        <div style={styles.road}>
+          <div style={styles.shopIcon}>🏪 Store</div>
+          {/* 🚚 Delivery Boy Animation Loop */}
+          <div style={styles.deliveryBoy}>🛵💨</div>
+          <div style={styles.homeIcon}>🏠 Home</div>
+        </div>
+      </div>
+
+      <div style={styles.textCard}>
+        <h2 style={styles.successText}>Order Confirmed! 🎉</h2>
+        <p style={styles.subText}>
+          <b>Neel</b>, your delivery partner is on the way to pick up your items.
+        </p>
+        <div style={styles.timer}>Arriving in <b>18-22 mins</b></div>
+      </div>
+
+      <button onClick={() => navigate('/')} style={styles.homeBtn}>Back to Home</button>
+
+      <p style={{ fontSize: '10px', color: '#aaa', marginTop: '40px' }}>
+        Order ID: #DK-{Math.floor(1000 + Math.random() * 9000)}
+      </p>
     </div>
   );
 };
 
 const styles = {
-  container: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F5F9', fontFamily: 'Inter, sans-serif', padding: '20px' },
-  card: { backgroundColor: '#fff', width: '100%', maxWidth: '400px', padding: '40px 30px', borderRadius: '24px', textAlign: 'center', boxShadow: '0 15px 35px rgba(0,0,0,0.05)' },
-  animationIcon: { fontSize: '60px', marginBottom: '20px', overflow: 'hidden', height: '80px' },
-  scooterAnim: { animation: 'drive 2s infinite linear' },
-  thankYou: { fontSize: '26px', fontWeight: '900', color: '#1A1A1A', margin: '0 0 10px 0' },
-  subtitle: { fontSize: '16px', color: '#666', marginBottom: '30px' },
-  storeCard: { backgroundColor: '#F8F9FA', padding: '15px', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', border: '1px solid #eee' },
-  storeInfo: { display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' },
-  storeIcon: { fontSize: '24px' },
-  storeLabel: { fontSize: '10px', color: '#888', fontWeight: '700', textTransform: 'uppercase', margin: 0 },
-  storeName: { fontSize: '13px', fontWeight: '700', margin: 0, color: '#333' },
-  distanceBadge: { backgroundColor: '#fff', padding: '4px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: '700', border: '1px solid #ddd' },
-  detailsBox: { marginBottom: '30px' },
-  detailText: { fontSize: '12px', color: '#999', lineHeight: '1.5' },
-  trackBtn: { width: '100%', padding: '16px', borderRadius: '14px', border: 'none', backgroundColor: '#E23744', color: '#fff', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 20px rgba(226, 55, 68, 0.2)' },
-  goHome: { marginTop: '20px', fontSize: '13px', color: '#888', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }
+  successPage: {
+    textAlign: 'center',
+    padding: '80px 20px',
+    fontFamily: 'Inter, sans-serif',
+    backgroundColor: '#fff',
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center'
+  },
+  confettiWrap: { position: 'absolute', top: 0, width: '100%', height: '100px', overflow: 'hidden', pointerEvents: 'none' },
+  dot: { position: 'absolute', fontSize: '20px', animation: 'confetti 2s linear infinite' },
+  animContainer: { width: '100%', maxWidth: '400px', margin: '40px 0' },
+  road: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    width: '100%', position: 'relative',
+    borderBottom: '2px dashed #eee', paddingBottom: '25px'
+  },
+  shopIcon: { fontSize: '18px', fontWeight: '800' },
+  homeIcon: { fontSize: '18px', fontWeight: '800' },
+  deliveryBoy: {
+    fontSize: '40px', position: 'absolute', left: '0',
+    animation: 'drive 3s linear infinite',
+    zIndex: 2
+  },
+  textCard: { animation: 'pop 0.5s ease-out' },
+  successText: { fontSize: '26px', fontWeight: '900', color: '#1c1c1c', margin: '10px 0' },
+  subText: { fontSize: '14px', color: '#666', lineHeight: '1.5', maxWidth: '280px', margin: '0 auto' },
+  timer: {
+    backgroundColor: '#f3f3f3',
+    display: 'inline-block',
+    padding: '8px 15px',
+    borderRadius: '20px',
+    fontSize: '12px',
+    marginTop: '20px',
+    border: '1px solid #eee'
+  },
+  homeBtn: {
+    backgroundColor: '#E23744',
+    color: '#fff',
+    border: 'none',
+    padding: '16px 40px',
+    borderRadius: '12px',
+    fontWeight: '800',
+    fontSize: '16px',
+    marginTop: '40px',
+    cursor: 'pointer',
+    boxShadow: '0 4px 15px rgba(226, 55, 68, 0.3)'
+  }
 };
-
-// CSS Animation for Scooter (Add this to your index.css)
-/*
-@keyframes drive {
-  0% { transform: translateX(-100px); }
-  100% { transform: translateX(100px); }
-}
-*/
 
 export default Success;
