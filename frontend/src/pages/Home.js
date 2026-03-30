@@ -13,19 +13,22 @@ const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 📍 1 & 5. Real-time Location Access
+    // 🚩 1 & 5. Real-time Location Access Logic
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          // Reverse Geocoding to get the actual city name
+          // Reverse Geocoding to get the city name in English
           const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          setUserCity(res.data.address.city || res.data.address.suburb || res.data.address.state_district || "Nearby");
+          const city = res.data.address.city || res.data.address.suburb || res.data.address.town || "Nearby";
+          setUserCity(city);
         } catch (e) {
-          console.log("Location Name Error");
+          console.log("Location Error");
           setUserCity("Nearby");
         }
-      }, () => setUserCity("Nearby"));
+      }, () => {
+        setUserCity("Nearby");
+      });
     }
 
     const fetchProducts = async () => {
@@ -40,7 +43,7 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  // 🔍 3. Live Search Logic (Filters through everything)
+  // 🔍 3. Live Search Logic (Filters through name, category, and shop)
   useEffect(() => {
     const results = products.filter(p =>
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,11 +53,12 @@ const Home = () => {
     setFilteredProducts(results);
   }, [searchTerm, products]);
 
-  // 🛡️ 2 & 4. Login Guard & Cute English Alert
+  // 🛡️ 2 & 4. Login Guard & English Alert
   const handleAddToCart = (product) => {
     const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
 
     if (!isLoggedIn) {
+      // 🚩 Alert in English with a cute tone
       alert("Wait a second! ✨ Please log in to your account to start shopping. 🛒");
       navigate('/login');
     } else {
