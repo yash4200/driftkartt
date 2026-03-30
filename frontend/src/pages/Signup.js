@@ -7,7 +7,13 @@ const Signup = () => {
 
     const handleSignup = (e) => {
         e.preventDefault();
-        navigate('/login');
+        // Naye user ka data set kar rahe hain
+        localStorage.setItem('userLoggedIn', 'true');
+        localStorage.setItem('userName', formData.name);
+        localStorage.setItem('userEmail', formData.email);
+
+        alert("Account Created Successfully! 🎉");
+        navigate('/'); // Seedha home page pe
     };
 
     return (
@@ -15,26 +21,53 @@ const Signup = () => {
             <div style={styles.loginBox}>
                 <h1 style={styles.logo}>Drift<span style={{ color: '#E23744' }}>Kart</span></h1>
                 <h2 style={styles.title}>Create your account</h2>
-                <p style={styles.subtitle}>Join us for a better shopping experience</p>
+                <p style={styles.subtitle}>Join DriftKart for a premium experience</p>
 
                 <form onSubmit={handleSignup} style={styles.form}>
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Full Name</label>
-                        <input type="text" placeholder="John Doe" style={styles.input} required />
+                        <input
+                            type="text"
+                            placeholder="John Doe"
+                            style={styles.input}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            required
+                        />
                     </div>
+
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Email Address</label>
-                        <input type="email" placeholder="name@example.com" style={styles.input} required />
+                        <input
+                            type="email"
+                            placeholder="name@example.com"
+                            style={styles.input}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            required
+                        />
                     </div>
+
                     <div style={styles.inputGroup}>
                         <label style={styles.label}>Phone Number</label>
-                        <input type="tel" placeholder="+91 00000 00000" style={styles.input} required />
+                        <input
+                            type="tel"
+                            placeholder="+91 00000 00000"
+                            style={styles.input}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                            required
+                        />
                     </div>
+
                     <div style={styles.inputGroup}>
-                        <label style={styles.label}>Create Password</label>
-                        <input type="password" placeholder="••••••••" style={styles.input} required />
+                        <label style={styles.label}>Password</label>
+                        <input
+                            type="password"
+                            placeholder="••••••••"
+                            style={styles.input}
+                            onChange={(e) => setFormData({ ...formData, pass: e.target.value })}
+                            required
+                        />
                     </div>
-                    <button type="submit" style={styles.loginBtn}>Sign Up</button>
+                    <button type="submit" style={styles.loginBtn}>Create Account</button>
                 </form>
 
                 <div style={styles.footer}>
@@ -46,7 +79,7 @@ const Signup = () => {
     );
 };
 
-// Styles same as Login.js
+// Styles same as Login for consistency
 const styles = {
     container: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa', fontFamily: 'Inter, sans-serif' },
     loginBox: { width: '100%', maxWidth: '400px', padding: '40px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', textAlign: 'center' },
@@ -54,10 +87,10 @@ const styles = {
     title: { fontSize: '20px', fontWeight: '700', color: '#222', marginBottom: '8px' },
     subtitle: { fontSize: '13px', color: '#888', marginBottom: '30px' },
     form: { textAlign: 'left' },
-    inputGroup: { marginBottom: '15px' }, // Slightly less margin for more fields
-    label: { display: 'block', fontSize: '12px', fontWeight: '700', color: '#555', marginBottom: '8px', textTransform: 'uppercase' },
-    input: { width: '100%', padding: '12px 15px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', boxSizing: 'border-box', outline: 'none' },
-    loginBtn: { width: '100%', padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#E23744', color: '#fff', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '10px' },
+    inputGroup: { marginBottom: '15px' },
+    label: { display: 'block', fontSize: '11px', fontWeight: '700', color: '#555', marginBottom: '6px', textTransform: 'uppercase' },
+    input: { width: '100%', padding: '12px 15px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '14px', boxSizing: 'border-box' },
+    loginBtn: { width: '100%', padding: '14px', borderRadius: '8px', border: 'none', backgroundColor: '#1A1A1A', color: '#fff', fontSize: '15px', fontWeight: '700', cursor: 'pointer', marginTop: '10px' },
     footer: { marginTop: '25px', fontSize: '13px', color: '#666' },
     link: { color: '#E23744', fontWeight: '700', cursor: 'pointer' }
 };

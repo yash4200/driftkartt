@@ -7,6 +7,7 @@ import Results from './pages/Results';
 import AdminPanel from './pages/AdminPanel';
 import Login from './pages/Login';
 import Orders from './pages/Orders'; // 🚩 Naya Import
+import Signup from './pages/Signup';
 
 // 🛡️ Protected Route: Sirf logged-in users ke liye
 const ProtectedRoute = ({ children }) => {
@@ -41,12 +42,14 @@ function App() {
         {/* ⚙️ ADMIN SECRET PORTAL */}
         <Route path="/admin-portal-access" element={<AdminPanel />} />
 
+        <Route path="/signup" element={<Signup />} />
+
         {/* ⚠️ 404: Professional Error Page */}
         <Route path="*" element={
           <div style={styles.errorPage}>
             <h1 style={{ fontSize: '80px', margin: 0, color: '#E23744' }}>404</h1>
-            <p style={{ fontSize: '18px', color: '#666' }}>Bhai, ye page toh stock mein nahi hai! 😂</p>
-            <a href="/" style={styles.backHome}>Wapas Home Chalo</a>
+            <p style={{ fontSize: '18px', color: '#666' }}>There is no page! 😂</p>
+            <a href="/" style={styles.backHome}>Go to Home</a>
           </div>
         } />
       </Routes>
