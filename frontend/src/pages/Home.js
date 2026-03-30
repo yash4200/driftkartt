@@ -6,193 +6,145 @@ const API_URL = "https://driftkartt.onrender.com";
 
 const Home = () => {
   const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [userCity, setUserCity] = useState("Your Area");
+  const [filteredDeals, setFilteredDeals] = useState([]);
+  const [userCity, setUserCity] = useState("Your Market");
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🚩 1 & 5. Real-time Location Access Logic
+    // 📍 Location Access (Context: Swiggy Style)
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          // Reverse Geocoding to get the city name in English
           const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          const city = res.data.address.city || res.data.address.suburb || res.data.address.town || "Nearby";
-          setUserCity(city);
-        } catch (e) {
-          console.log("Location Error");
-          setUserCity("Nearby");
-        }
-      }, () => {
-        setUserCity("Nearby");
+          setUserCity(res.data.address.suburb || res.data.address.city || "Nearby");
+        } catch (e) { setUserCity("Nearby"); }
       });
     }
 
-    const fetchProducts = async () => {
+    const fetchAllMarketProducts = async () => {
       try {
         const res = await axios.get(`${API_URL}/products`);
         setProducts(res.data);
-        setLoading(false);
-      } catch (err) {
-        setLoading(false);
-      }
+      } catch (err) { console.log("API Error"); }
     };
-    fetchProducts();
+    fetchAllMarketProducts();
   }, []);
 
-  // 🔍 3. Live Search Logic (Filters through name, category, and shop)
+  // 🔍 Comparison Engine: Filters and Sorts by Price (Low to High)
   useEffect(() => {
-    const results = products.filter(p =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.shopName?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredProducts(results);
+    if (searchTerm === "") {
+      setFilteredDeals([]);
+    } else {
+      const matches = products.filter(p =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      // 🔥 THE MAGIC: Sort by price to show "Best Deal" first
+      const sorted = [...matches].sort((a, b) => a.price - b.price);
+      setFilteredDeals(sorted);
+    }
   }, [searchTerm, products]);
 
-  // 🛡️ 2 & 4. Login Guard & English Alert
-  const handleAddToCart = (product) => {
+  const handleSelectDeal = (item) => {
     const isLoggedIn = localStorage.getItem('userLoggedIn') === 'true';
-
     if (!isLoggedIn) {
-      // 🚩 Alert in English with a cute tone
-      alert("Wait a second! ✨ Please log in to your account to start shopping. 🛒");
+      alert("Wait a second! ✨ Please log in to grab this deal. 🛒");
       navigate('/login');
     } else {
-      localStorage.setItem('cartItem', JSON.stringify(product));
+      localStorage.setItem('cartItem', JSON.stringify(item));
       navigate('/checkout');
     }
   };
 
-  if (loading) return <div style={styles.loader}>Getting DriftKart ready for you... ✨</div>;
-
   return (
     <div style={styles.container}>
-      {/* --- HEADER --- */}
+      {/* --- PREMIUM MARKET HEADER --- */}
       <header style={styles.header}>
-        <div style={styles.headerMain}>
-          <h1 style={styles.logo} onClick={() => setSearchTerm("")}>Drift<span style={{ color: '#E23744' }}>Kart</span></h1>
-          <div style={styles.searchContainer}>
-            <input
-              type="text"
-              placeholder={`Search essentials in ${userCity}...`}
-              style={styles.searchBar}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div onClick={() => navigate('/login')} style={styles.profileIcon}>👤</div>
+        <div style={styles.locRow}>
+          <p style={styles.locLabel}>COMPARING SHOPS IN</p>
+          <h2 style={styles.locName}>📍 {userCity}</h2>
+        </div>
+        <div style={styles.searchWrapper}>
+          <input
+            type="text"
+            placeholder="Search for any product to compare prices..."
+            style={styles.searchBar}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </header>
 
       <main style={styles.main}>
-        {searchTerm !== "" ? (
-          // 🔍 SEARCH RESULTS VIEW
-          <div style={{ padding: '20px' }}>
-            <h2 style={styles.sectionTitle}>Yay! We found these:</h2>
-            <div style={styles.searchGrid}>
-              {filteredProducts.length > 0 ? (
-                filteredProducts.map(p => <ProductCard key={p._id} p={p} onAdd={handleAddToCart} />)
-              ) : (
-                <p style={styles.noResult}>Oops! No products match your search. 🌸</p>
-              )}
-            </div>
+        {searchTerm === "" ? (
+          <div style={styles.hero}>
+            <h1 style={styles.heroText}>Stop Paying More. <br /><span style={{ color: '#E23744' }}>Compare Local Prices.</span></h1>
+            <p style={styles.heroSub}>Find which local shop is offering the best deal today. ✨</p>
           </div>
         ) : (
-          // 🏠 HOME SECTIONS VIEW
-          <>
-            <div style={styles.quickNav}>
-              <div style={styles.storeBanner}>
-                <div>
-                  <p style={styles.bannerLabel}>DELIVERING TO</p>
-                  <h4 style={styles.bannerTitle}>📍 {userCity} • Neighborhood</h4>
+          <div style={styles.resultsArea}>
+            <h3 style={styles.resultsTitle}>Found {filteredDeals.length} options for "{searchTerm}"</h3>
+
+            {filteredDeals.map((item, index) => (
+              <div key={item._id} style={index === 0 ? styles.bestDealCard : styles.normalDealCard}>
+                {index === 0 && <div style={styles.bestTag}>🏆 BEST DEAL</div>}
+
+                <div style={styles.cardContent}>
+                  <img src={item.image} alt={item.name} style={styles.prodImg} />
+                  <div style={styles.info}>
+                    <h4 style={styles.prodName}>{item.name}</h4>
+                    <p style={styles.shopName}>Sold by: <b>{item.shopName || "Local Merchant"}</b></p>
+                    <p style={styles.distTag}>• 1.2 km away</p>
+                  </div>
+                  <div style={styles.priceSection}>
+                    <span style={styles.price}>₹{item.price}</span>
+                    <button
+                      style={index === 0 ? styles.buyBtnBest : styles.buyBtn}
+                      onClick={() => handleSelectDeal(item)}
+                    >
+                      ORDER
+                    </button>
+                  </div>
                 </div>
-                <div style={styles.deliveryBadge}>⚡ 12 MINS</div>
               </div>
-            </div>
-            {renderSection("Grocery & Kitchen", ["grocery", "atta", "oil"], "🥦", products, handleAddToCart, navigate)}
-            {renderSection("Snacks & Drinks", ["snacks", "maggi", "drinks"], "🥤", products, handleAddToCart, navigate)}
-            {renderSection("Beauty & Personal Care", ["beauty", "soap", "shampoo"], "💄", products, handleAddToCart, navigate)}
-          </>
+            ))}
+          </div>
         )}
       </main>
     </div>
   );
 };
 
-// --- HELPER: SECTION RENDERER ---
-const renderSection = (title, keys, icon, products, onAdd, navigate) => {
-  const items = products.filter(p => keys.some(k => p.category?.toLowerCase().includes(k)));
-  if (items.length === 0) return null;
-  return (
-    <div style={styles.sectionWrapper}>
-      <div style={styles.sectionHeader}>
-        <h2 style={styles.sectionTitle}>{icon} {title}</h2>
-        <span style={styles.seeAll} onClick={() => navigate(`/listing?cat=${keys[0]}`)}>See all</span>
-      </div>
-      <div style={styles.horizontalScroll}>
-        {items.map(p => <ProductCard key={p._id} p={p} onAdd={onAdd} />)}
-      </div>
-    </div>
-  );
-};
-
-// --- HELPER: PRODUCT CARD (UI PROTECTED) ---
-const ProductCard = ({ p, onAdd }) => (
-  <div style={styles.smallCard} onClick={() => onAdd(p)}>
-    <div style={styles.timeTagSmall}>12 MINS</div>
-    <div style={styles.smallImgWrapper}>
-      <img
-        src={p.image}
-        alt={p.name}
-        style={styles.smallImg}
-        loading="lazy"
-        onError={(e) => e.target.src = "https://cdn-icons-png.flaticon.com/512/3081/3081840.png"}
-      />
-    </div>
-    <p style={styles.smallName}>{p.name}</p>
-    <p style={styles.smallShopName}>📍 {p.shopName || "Local Partner"}</p>
-    <div style={styles.smallPriceRow}>
-      <span style={styles.smallPrice}>₹{p.price}</span>
-      <button style={styles.smallAddBtn}>ADD</button>
-    </div>
-  </div>
-);
-
 const styles = {
-  container: { backgroundColor: '#fff', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
-  header: { padding: '12px 20px', borderBottom: '1px solid #f0f0f0', position: 'sticky', top: 0, backgroundColor: '#fff', zIndex: 100 },
-  headerMain: { display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'space-between' },
-  logo: { fontSize: '22px', fontWeight: '900', margin: 0, cursor: 'pointer' },
-  profileIcon: { cursor: 'pointer', fontSize: '22px', color: '#333' },
-  searchContainer: { flex: 1, maxWidth: '500px' },
-  searchBar: { width: '100%', padding: '12px', borderRadius: '10px', border: 'none', backgroundColor: '#F3F5F7', fontSize: '14px', outline: 'none' },
-  main: { paddingBottom: '30px' },
-  sectionWrapper: { padding: '20px 0 0 20px' },
-  sectionHeader: { display: 'flex', justifyContent: 'space-between', paddingRight: '20px', marginBottom: '12px', alignItems: 'center' },
-  sectionTitle: { fontSize: '17px', fontWeight: '800', margin: 0 },
-  seeAll: { color: '#E23744', fontWeight: '700', fontSize: '13px', cursor: 'pointer' },
-  horizontalScroll: { display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '15px', scrollbarWidth: 'none' },
-  smallCard: { minWidth: '145px', border: '1px solid #f0f0f0', borderRadius: '16px', padding: '12px', position: 'relative', cursor: 'pointer' },
-  smallImgWrapper: { height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  smallImg: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
-  smallName: { fontSize: '13px', fontWeight: '700', height: '34px', overflow: 'hidden', marginTop: '10px', color: '#333' },
-  smallShopName: { fontSize: '10px', color: '#E23744', margin: '6px 0', fontWeight: '600' },
-  smallPriceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  smallPrice: { fontWeight: '800', fontSize: '15px' },
-  smallAddBtn: { border: '1px solid #E23744', color: '#E23744', background: '#fff', padding: '5px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '11px' },
-  timeTagSmall: { position: 'absolute', top: '10px', left: '10px', background: 'rgba(255,255,255,0.9)', padding: '2px 6px', borderRadius: '5px', fontSize: '9px', fontWeight: '900', border: '1px solid #eee' },
-  searchGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))', gap: '15px' },
-  noResult: { color: '#888', textAlign: 'center', marginTop: '40px', width: '100%' },
-  quickNav: { padding: '15px 20px' },
-  storeBanner: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#F8F9FB', padding: '15px', borderRadius: '15px', border: '1px solid #eee' },
-  bannerLabel: { fontSize: '9px', color: '#888', fontWeight: '800', margin: 0 },
-  bannerTitle: { fontSize: '14px', fontWeight: '700', margin: 0 },
-  deliveryBadge: { background: '#000', color: '#fff', padding: '6px 12px', borderRadius: '8px', fontSize: '10px', fontWeight: '900' },
-  loader: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '16px', fontWeight: '700', color: '#E23744' }
+  container: { backgroundColor: '#F7F9FC', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
+  header: { backgroundColor: '#fff', padding: '20px', borderBottom: '1px solid #eee', position: 'sticky', top: 0, zIndex: 100 },
+  locLabel: { fontSize: '10px', fontWeight: '800', color: '#888', margin: 0 },
+  locName: { fontSize: '16px', margin: '2px 0 15px 0', fontWeight: '900' },
+  searchBar: { width: '100%', padding: '15px', borderRadius: '12px', border: '2px solid #F3F5F7', backgroundColor: '#F3F5F7', fontSize: '14px', outline: 'none', fontWeight: '600' },
+  main: { padding: '20px' },
+  hero: { textAlign: 'center', marginTop: '50px' },
+  heroText: { fontSize: '28px', fontWeight: '900', lineHeight: '1.2' },
+  heroSub: { color: '#666', fontSize: '14px' },
+  resultsArea: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  resultsTitle: { fontSize: '14px', fontWeight: '700', color: '#444' },
+
+  // Best Deal Highlighting
+  bestDealCard: { backgroundColor: '#fff', borderRadius: '16px', border: '2px solid #E23744', padding: '15px', position: 'relative', boxShadow: '0 4px 15px rgba(226, 55, 68, 0.1)' },
+  normalDealCard: { backgroundColor: '#fff', borderRadius: '16px', border: '1px solid #eee', padding: '15px' },
+  bestTag: { position: 'absolute', top: '-10px', left: '15px', backgroundColor: '#E23744', color: '#fff', fontSize: '10px', fontWeight: '900', padding: '4px 10px', borderRadius: '20px' },
+
+  cardContent: { display: 'flex', alignItems: 'center', gap: '15px' },
+  prodImg: { width: '60px', height: '60px', objectFit: 'contain' },
+  info: { flex: 1 },
+  prodName: { fontSize: '15px', fontWeight: '800', margin: '0 0 4px 0' },
+  shopName: { fontSize: '12px', margin: 0, color: '#555' },
+  distTag: { fontSize: '11px', color: '#888', margin: '2px 0 0 0' },
+  priceSection: { textAlign: 'right' },
+  price: { fontSize: '20px', fontWeight: '900', display: 'block', marginBottom: '5px' },
+  buyBtnBest: { backgroundColor: '#E23744', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' },
+  buyBtn: { backgroundColor: '#000', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }
 };
 
 export default Home;
