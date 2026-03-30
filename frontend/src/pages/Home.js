@@ -9,9 +9,20 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+
+  // 🚩 REAL LOCAL STORES LOGIC
+  const [localStore, setLocalStore] = useState({ name: 'Sharma Grocery Store', dist: '0.8 km' });
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Local Shop Moto: Neighbourhood stores list
+    const stores = [
+      { name: 'Sharma Grocery & Daily Needs', dist: '0.6 km' },
+      { name: 'All In One General Store', dist: '1.2 km' },
+      { name: 'Gupta Ji Supermart', dist: '0.9 km' }
+    ];
+    setLocalStore(stores[Math.floor(Math.random() * stores.length)]);
+
     const fetchProducts = async () => {
       try {
         const res = await axios.get(`${API_URL}/products`);
@@ -63,7 +74,7 @@ const Home = () => {
           <div style={styles.searchContainer}>
             <input
               type="text"
-              placeholder="Search for 'Maggi', 'Bottle'..."
+              placeholder="Search local products..."
               style={styles.searchBar}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -78,14 +89,15 @@ const Home = () => {
         </div>
       </header>
 
-      {/* 🚩 NEW: BLINKIT STYLE STORE SECTION (Directly below Header) */}
+      {/* 🚩 UPDATED: LOCAL SHOP SECTION (Supporting Neighborhood Shops) */}
       <div style={styles.storeSection}>
         <div style={styles.storeCard}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={styles.storeIconCircle}>🏪</div>
             <div>
-              <p style={styles.storeLabel}>Delivering from</p>
-              <h4 style={styles.storeName}>DriftKart Dark Store • <span style={{ color: '#2E7D32' }}>1.2 km</span></h4>
+              <p style={styles.storeLabel}>Delivering from Local Partner</p>
+              <h4 style={styles.storeName}>{localStore.name} • <span style={{ color: '#2E7D32' }}>{localStore.dist}</span></h4>
+              <p style={{ margin: 0, fontSize: '10px', color: '#999' }}>Empowering local retailers nearby</p>
             </div>
           </div>
           <div style={styles.blinkitBadge}>⚡ 12 MINS</div>
@@ -110,9 +122,7 @@ const Home = () => {
           {filteredProducts.map((p) => (
             <div key={p._id} style={styles.card} onClick={() => addToCart(p)}>
               <div style={styles.imgWrapper}>
-                {/* 🚩 NEW: TIME TAG ON EVERY PRODUCT */}
                 <div style={styles.timeTag}>⚡ 12 MINS</div>
-
                 {p.originalPrice && (
                   <span style={styles.discountBadge}>
                     {Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}% OFF
@@ -154,7 +164,6 @@ const styles = {
   iconItem: { position: 'relative', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
   cartBadge: { backgroundColor: '#E23744', color: '#fff', fontSize: '9px', padding: '2px 5px', borderRadius: '10px', marginLeft: '3px' },
 
-  // 🚩 NEARBY STORE STYLES
   storeSection: { padding: '10px 20px', backgroundColor: '#fff' },
   storeCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', backgroundColor: '#F8F9FB', borderRadius: '12px', border: '1px solid #EDF2F7' },
   storeIconCircle: { fontSize: '20px', backgroundColor: '#fff', padding: '8px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
@@ -172,7 +181,6 @@ const styles = {
   imgWrapper: { position: 'relative', height: '150px', padding: '15px', textAlign: 'center' },
   img: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
 
-  // 🚩 TIME TAG ON IMAGE
   timeTag: { position: 'absolute', bottom: '10px', left: '10px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '800', border: '1px solid #eee' },
   discountBadge: { position: 'absolute', top: '10px', left: '10px', backgroundColor: '#3182CE', fontSize: '9px', fontWeight: '900', padding: '2px 5px', borderRadius: '4px', color: '#fff' },
 
