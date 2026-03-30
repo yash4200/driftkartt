@@ -5,6 +5,7 @@ const API_URL = "https://driftkartt.onrender.com";
 
 const AdminPanel = () => {
     const [products, setProducts] = useState([]);
+    const [orders, setOrders] = useState([]); // 🚩 New State for Orders
     const [password, setPassword] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', price: '', category: '', image: '', originalPrice: '' });
@@ -20,12 +21,21 @@ const AdminPanel = () => {
     useEffect(() => {
         if (isLoggedIn) {
             fetchProducts();
+            fetchOrders(); // 🚩 Orders load karo
         }
     }, [isLoggedIn]);
 
     const fetchProducts = async () => {
         const res = await axios.get(`${API_URL}/products`);
         setProducts(res.data);
+    };
+
+    // 🚩 Fetch Orders Logic
+    const fetchOrders = () => {
+        const lastOrder = localStorage.getItem('lastOrder');
+        if (lastOrder) {
+            setOrders([JSON.parse(lastOrder)]); // Abhi ke liye last order dikhayega
+        }
     };
 
     const handleAddProduct = async (e) => {
@@ -66,6 +76,7 @@ const AdminPanel = () => {
             </header>
 
             <div style={styles.content}>
+                {/* --- ADD PRODUCT --- */}
                 <div style={styles.card}>
                     <h3>Add New Product</h3>
                     <form onSubmit={handleAddProduct}>
@@ -78,6 +89,31 @@ const AdminPanel = () => {
                     </form>
                 </div>
 
+                {/* 🚩 NEW: RECENT ORDERS SECTION (UI matched with Inventory) */}
+                <div style={styles.listCard}>
+                    <h3 style={{ color: '#2E7D32' }}>Recent Customer Orders ({orders.length})</h3>
+                    <div style={styles.orderTableHead}>
+                        <span>Customer/Item</span>
+                        <span>Price</span>
+                        <span>Status</span>
+                    </div>
+                    {orders.length === 0 ? <p style={{ textAlign: 'center', color: '#888', padding: '20px' }}>No orders received yet.</p> :
+                        orders.map((o, index) => (
+                            <div key={index} style={styles.itemRow}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <img src={o.image} width="30" height="30" style={{ objectFit: 'contain' }} alt="" />
+                                    <span>{o.name}</span>
+                                </div>
+                                <span style={{ fontWeight: 'bold' }}>₹{o.price}</span>
+                                <span style={{ color: '#2E7D32', fontWeight: '800', fontSize: '11px' }}>RECEIVED</span>
+                            </div>
+                        ))
+                    }
+                </div>
+
+                <div style={{ marginTop: '30px' }} className="spacer"></div>
+
+                {/* --- INVENTORY LIST --- */}
                 <div style={styles.listCard}>
                     <h3>Current Inventory ({products.length})</h3>
                     <div style={styles.tableHead}>
@@ -109,11 +145,12 @@ const styles = {
     loginCont: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f2f5' },
     content: { padding: '40px', maxWidth: '1000px', margin: '0 auto' },
     card: { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px' },
-    listCard: { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' },
+    listCard: { backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '30px' },
     input: { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box' },
     btn: { width: '100%', padding: '12px', backgroundColor: '#E23744', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
     logoutBtn: { padding: '8px 15px', backgroundColor: '#eee', border: 'none', borderRadius: '5px', cursor: 'pointer' },
     tableHead: { display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '10px', borderBottom: '2px solid #eee', fontWeight: 'bold', fontSize: '14px', color: '#888' },
+    orderTableHead: { display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '10px', borderBottom: '2px solid #eee', fontWeight: 'bold', fontSize: '14px', color: '#888' },
     itemRow: { display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', padding: '15px 10px', borderBottom: '1px solid #f9f9f9', alignItems: 'center', fontSize: '14px' },
     delBtn: { backgroundColor: '#fff', color: '#ff4d4f', border: '1px solid #ff4d4f', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' }
 };

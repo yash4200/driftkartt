@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-// 🚩 TERA SAHI BACKEND URL
 const API_URL = "https://driftkartt.onrender.com";
 
 const Home = () => {
@@ -26,7 +25,6 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  // 🚩 ADD TO CART LOGIC (Local Storage Fix)
   const addToCart = (product) => {
     localStorage.setItem('cartItem', JSON.stringify(product));
     navigate('/checkout');
@@ -48,7 +46,6 @@ const Home = () => {
           <div key={i} style={styles.skeletonCard}>
             <div style={styles.skeletonImg}></div>
             <div style={styles.skeletonTextLarge}></div>
-            <div style={styles.skeletonTextSmall}></div>
           </div>
         ))}
       </div>
@@ -57,7 +54,7 @@ const Home = () => {
 
   return (
     <div style={styles.container}>
-      {/* --- DEODAP STYLE HEADER --- */}
+      {/* --- HEADER --- */}
       <header style={styles.header}>
         <div style={styles.headerMain}>
           <h1 style={styles.logo} onClick={() => window.location.reload()}>
@@ -66,25 +63,36 @@ const Home = () => {
           <div style={styles.searchContainer}>
             <input
               type="text"
-              placeholder="Search for 'Maggi', 'Bottle', or 'Stationery'..."
+              placeholder="Search for 'Maggi', 'Bottle'..."
               style={styles.searchBar}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <div style={styles.headerIcons}>
-            <div style={styles.iconItem} onClick={() => navigate('/login')}>
-              👤 <span>Login</span>
-            </div>
+            <div style={styles.iconItem} onClick={() => navigate('/login')}>👤 Login</div>
             <div style={styles.iconItem} onClick={() => navigate('/checkout')}>
-              🛒 <span>Cart</span>
-              <span style={styles.cartBadge}>{products.length > 0 ? '1' : '0'}</span>
+              🛒 Cart <span style={styles.cartBadge}>{products.length > 0 ? '1' : '0'}</span>
             </div>
           </div>
         </div>
       </header>
 
-      {/* --- SCROLLABLE CATEGORY CHIPS --- */}
+      {/* 🚩 NEW: BLINKIT STYLE STORE SECTION (Directly below Header) */}
+      <div style={styles.storeSection}>
+        <div style={styles.storeCard}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={styles.storeIconCircle}>🏪</div>
+            <div>
+              <p style={styles.storeLabel}>Delivering from</p>
+              <h4 style={styles.storeName}>DriftKart Dark Store • <span style={{ color: '#2E7D32' }}>1.2 km</span></h4>
+            </div>
+          </div>
+          <div style={styles.blinkitBadge}>⚡ 12 MINS</div>
+        </div>
+      </div>
+
+      {/* --- CATEGORIES --- */}
       <div style={styles.categoryScroll}>
         {categories.map(cat => (
           <button
@@ -100,15 +108,14 @@ const Home = () => {
       <main style={styles.main}>
         <div style={styles.grid}>
           {filteredProducts.map((p) => (
-            <div
-              key={p._id}
-              style={styles.card}
-              onClick={() => addToCart(p)} // 🚩 Card click par bhi checkout
-            >
+            <div key={p._id} style={styles.card} onClick={() => addToCart(p)}>
               <div style={styles.imgWrapper}>
+                {/* 🚩 NEW: TIME TAG ON EVERY PRODUCT */}
+                <div style={styles.timeTag}>⚡ 12 MINS</div>
+
                 {p.originalPrice && (
                   <span style={styles.discountBadge}>
-                    -{Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}%
+                    {Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}% OFF
                   </span>
                 )}
                 <img src={p.image} alt={p.name} style={styles.img} />
@@ -120,15 +127,11 @@ const Home = () => {
                     <span style={styles.price}>₹{p.price}</span>
                     {p.originalPrice && <span style={styles.oldPrice}>₹{p.originalPrice}</span>}
                   </div>
-                  {/* 🚩 UPDATED BUTTON LOGIC */}
                   <button
                     style={styles.addBtn}
-                    onClick={(e) => {
-                      e.stopPropagation(); // Card click event ko rokne ke liye
-                      addToCart(p);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); addToCart(p); }}
                   >
-                    ADD +
+                    ADD
                   </button>
                 </div>
               </div>
@@ -141,38 +144,52 @@ const Home = () => {
 };
 
 const styles = {
-  container: { backgroundColor: '#f5f5f5', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
-  header: { backgroundColor: '#fff', padding: '10px 20px', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 5px rgba(0,0,0,0.05)' },
-  headerMain: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px' },
-  logo: { fontSize: '22px', fontWeight: '900', letterSpacing: '-1px', cursor: 'pointer', margin: 0, textDecoration: 'none', color: '#000' },
-  searchContainer: { flexGrow: 1, maxWidth: '600px' },
-  searchBar: { width: '100%', padding: '10px 15px', borderRadius: '8px', border: '1px solid #ddd', backgroundColor: '#fcfcfc', fontSize: '13px', outline: 'none', boxSizing: 'border-box' },
-  headerIcons: { display: 'flex', gap: '20px', alignItems: 'center' },
-  iconItem: { position: 'relative', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', color: '#555', cursor: 'pointer', fontWeight: '600' },
-  cartBadge: { position: 'absolute', top: '-10px', right: '-10px', backgroundColor: '#E23744', color: '#fff', fontSize: '9px', padding: '2px 5px', borderRadius: '10px' },
-  categoryScroll: { display: 'flex', gap: '8px', padding: '12px 20px', overflowX: 'auto', whiteSpace: 'nowrap', backgroundColor: '#fff', borderTop: '1px solid #eee' },
-  chip: { padding: '6px 15px', borderRadius: '20px', border: '1px solid #ddd', backgroundColor: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.1s' },
-  chipActive: { padding: '6px 15px', borderRadius: '20px', border: '1px solid #E23744', backgroundColor: '#E23744', color: '#fff', fontSize: '12px', fontWeight: '600' },
-  main: { padding: '20px' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px' },
-  card: { backgroundColor: '#fff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.02)', transition: 'transform 0.1s', cursor: 'pointer' },
-  imgWrapper: { position: 'relative', height: '160px', padding: '10px', textAlign: 'center', borderBottom: '1px solid #f0f0f0' },
+  container: { backgroundColor: '#F4F6F8', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
+  header: { backgroundColor: '#fff', padding: '12px 20px', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #eee' },
+  headerMain: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' },
+  logo: { fontSize: '20px', fontWeight: '900', cursor: 'pointer', margin: 0, color: '#000' },
+  searchContainer: { flexGrow: 1, maxWidth: '500px' },
+  searchBar: { width: '100%', padding: '10px 15px', borderRadius: '10px', border: '1px solid #eee', backgroundColor: '#F0F2F5', fontSize: '13px', outline: 'none' },
+  headerIcons: { display: 'flex', gap: '15px', alignItems: 'center' },
+  iconItem: { position: 'relative', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
+  cartBadge: { backgroundColor: '#E23744', color: '#fff', fontSize: '9px', padding: '2px 5px', borderRadius: '10px', marginLeft: '3px' },
+
+  // 🚩 NEARBY STORE STYLES
+  storeSection: { padding: '10px 20px', backgroundColor: '#fff' },
+  storeCard: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', backgroundColor: '#F8F9FB', borderRadius: '12px', border: '1px solid #EDF2F7' },
+  storeIconCircle: { fontSize: '20px', backgroundColor: '#fff', padding: '8px', borderRadius: '50%', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
+  storeLabel: { fontSize: '10px', color: '#888', fontWeight: '800', textTransform: 'uppercase', margin: 0 },
+  storeName: { fontSize: '13px', fontWeight: '700', margin: 0 },
+  blinkitBadge: { backgroundColor: '#000', color: '#fff', padding: '5px 10px', borderRadius: '8px', fontSize: '11px', fontWeight: '900' },
+
+  categoryScroll: { display: 'flex', gap: '8px', padding: '10px 20px', overflowX: 'auto', backgroundColor: '#fff', borderBottom: '1px solid #eee' },
+  chip: { padding: '6px 14px', borderRadius: '18px', border: '1px solid #ddd', backgroundColor: '#fff', fontSize: '12px', fontWeight: '600', cursor: 'pointer' },
+  chipActive: { padding: '6px 14px', borderRadius: '18px', backgroundColor: '#000', color: '#fff', fontSize: '12px', fontWeight: '600' },
+
+  main: { padding: '15px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' },
+  card: { backgroundColor: '#fff', borderRadius: '16px', overflow: 'hidden', border: '1px solid #f0f0f0', cursor: 'pointer' },
+  imgWrapper: { position: 'relative', height: '150px', padding: '15px', textAlign: 'center' },
   img: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
-  discountBadge: { position: 'absolute', top: '10px', right: '10px', backgroundColor: '#E23744', fontSize: '10px', fontWeight: '800', padding: '3px 6px', borderRadius: '5px', color: '#fff', textTransform: 'uppercase' },
-  info: { padding: '12px' },
-  pName: { fontSize: '13px', fontWeight: '600', margin: '0 0 10px 0', height: '32px', overflow: 'hidden', color: '#333' },
-  priceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' },
-  priceContainer: { display: 'flex', alignItems: 'baseline', gap: '3px' },
-  price: { fontSize: '16px', fontWeight: '800', color: '#222' },
-  oldPrice: { fontSize: '11px', color: '#aaa', textDecoration: 'line-through' },
-  addBtn: { backgroundColor: '#E23744', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', cursor: 'pointer' },
+
+  // 🚩 TIME TAG ON IMAGE
+  timeTag: { position: 'absolute', bottom: '10px', left: '10px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '2px 6px', borderRadius: '4px', fontSize: '9px', fontWeight: '800', border: '1px solid #eee' },
+  discountBadge: { position: 'absolute', top: '10px', left: '10px', backgroundColor: '#3182CE', fontSize: '9px', fontWeight: '900', padding: '2px 5px', borderRadius: '4px', color: '#fff' },
+
+  info: { padding: '12px', paddingTop: 0 },
+  pName: { fontSize: '13px', fontWeight: '600', margin: '0 0 8px 0', height: '32px', overflow: 'hidden' },
+  priceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  priceContainer: { display: 'flex', flexDirection: 'column' },
+  price: { fontSize: '15px', fontWeight: '800' },
+  oldPrice: { fontSize: '10px', color: '#aaa', textDecoration: 'line-through' },
+  addBtn: { backgroundColor: '#fff', color: '#E23744', border: '1px solid #E23744', padding: '5px 15px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', cursor: 'pointer' },
+
   loaderContainer: { padding: '20px' },
-  headerDummy: { height: '60px', backgroundColor: '#fff', marginBottom: '20px', borderRadius: '8px' },
-  skeletonGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '15px' },
-  skeletonCard: { backgroundColor: '#fff', borderRadius: '12px', padding: '10px', height: '260px' },
-  skeletonImg: { height: '160px', backgroundColor: '#e0e0e0', marginBottom: '10px', borderRadius: '8px' },
-  skeletonTextLarge: { height: '15px', backgroundColor: '#e0e0e0', width: '80%', marginBottom: '8px', borderRadius: '4px' },
-  skeletonTextSmall: { height: '10px', backgroundColor: '#f0f0f0', width: '50%', borderRadius: '4px' }
+  headerDummy: { height: '50px', backgroundColor: '#fff', borderRadius: '8px', marginBottom: '15px' },
+  skeletonGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' },
+  skeletonCard: { backgroundColor: '#fff', height: '220px', borderRadius: '16px', padding: '10px' },
+  skeletonImg: { height: '130px', backgroundColor: '#eee', borderRadius: '10px', marginBottom: '10px' },
+  skeletonTextLarge: { height: '12px', backgroundColor: '#eee', width: '70%', borderRadius: '4px' }
 };
 
 export default Home;
