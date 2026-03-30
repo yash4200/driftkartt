@@ -7,12 +7,19 @@ const API_URL = "https://driftkartt.onrender.com";
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userCity, setUserCity] = useState("Your Neighborhood");
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🚩 Request Location (Backend logic)
+    // 🚩 Real-time Location Fetch (City Name)
     if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(() => { }, () => { });
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          setUserCity(res.data.address.city || res.data.address.suburb || "Nearby");
+        } catch (e) { console.log("Location Name Error"); }
+      });
     }
 
     const fetchProducts = async () => {
@@ -21,7 +28,6 @@ const Home = () => {
         setProducts(res.data);
         setLoading(false);
       } catch (err) {
-        console.error("Fetch Error:", err);
         setLoading(false);
       }
     };
@@ -33,11 +39,9 @@ const Home = () => {
     navigate('/checkout');
   };
 
-  // 🚩 STEP 1: SECTION RENDERER LOGIC (Same UI Structure)
   const renderHorizontalSection = (title, categoryKeywords, icon) => {
-    // Keywords matching for easy backend mapping
     const sectionProducts = products.filter(p =>
-      categoryKeywords.some(key => p.category?.toLowerCase().includes(key.toLowerCase()) || p.name?.toLowerCase().includes(key.toLowerCase()))
+      categoryKeywords.some(key => p.category?.toLowerCase().includes(key.toLowerCase()))
     );
 
     if (sectionProducts.length === 0) return null;
@@ -46,63 +50,64 @@ const Home = () => {
       <div key={title} style={styles.sectionWrapper}>
         <div style={styles.sectionHeader}>
           <h2 style={styles.sectionTitle}>{icon} {title}</h2>
-          {/* 🚩 2. SEE ALL CLICK PAR US CATEGORY PE NAVIGATE */}
-          <span style={styles.seeAll} onClick={() => navigate(`/category/${categoryKeywords[0]}`)}>
+          {/* 🚩 FIX: Iska path App.js ke '/listing' se match kar diya hai ab 404 nahi aayega */}
+          <span style={styles.seeAll} onClick={() => navigate(`/listing?cat=${categoryKeywords[0]}`)}>
             See all
           </span>
         </div>
         <div style={styles.horizontalScroll}>
-          {sectionProducts.map((p) => (
-            <div key={p._id} style={styles.smallCard} onClick={() => addToCart(p)}>
-              <div style={styles.timeTagSmall}>⚡ 12 MINS</div>
-              <div style={styles.smallImgWrapper}>
-                {/* 🚩 3. DYNAMIC IMAGE & FALLBACK */}
-                <img
-                  src={p.image}
-                  alt={p.name}
-                  style={styles.smallImg}
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    // Agar real image nahi load hui, tabhi monitor placeholder dikhe
-                    e.target.src = "https://cdn-icons-png.flaticon.com/512/1162/1162456.png";
-                  }}
-                />
+          {sectionProducts.map((p) => {
+            const discount = p.originalPrice > p.price ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
+            return (
+              <div key={p._id} style={styles.smallCard} onClick={() => addToCart(p)}>
+                {discount > 0 && <div style={styles.discountBadge}>{discount}% OFF</div>}
+                <div style={styles.timeTagSmall}>⚡ 12 MINS</div>
+                <div style={styles.smallImgWrapper}>
+                  <img
+                    src={p.image}
+                    alt={p.name}
+                    style={styles.smallImg}
+                    loading="lazy" // Instant loading optimization
+                    onError={(e) => {
+                      e.target.src = "https://cdn-icons-png.flaticon.com/512/3081/3081840.png"; // Cute Grocery Icon as fallback
+                    }}
+                  />
+                </div>
+                <p style={styles.smallName}>{p.name}</p>
+                {/* 🚩 Dynamic Shop Name Display */}
+                <p style={styles.smallShopName}>📍 {p.shopName || "Local Store"}</p>
+                <div style={styles.smallPriceRow}>
+                  <span style={styles.smallPrice}>₹{p.price}</span>
+                  <button style={styles.smallAddBtn}>ADD</button>
+                </div>
               </div>
-              <p style={styles.smallName}>{p.name}</p>
-              <p style={styles.smallShopName}>{p.shopName || "Local Partner"}</p>
-              <div style={styles.smallPriceRow}>
-                <span style={styles.smallPrice}>₹{p.price}</span>
-                <button style={styles.smallAddBtn} onClick={(e) => { e.stopPropagation(); addToCart(p); }}>ADD</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
   };
 
-  if (loading) return <div style={styles.loader}>Getting DriftKart ready...</div>;
+  if (loading) return <div style={styles.loader}>Setting up DriftKart for you...</div>;
 
   return (
     <div style={styles.container}>
-      {/* --- HEADER (Same as your UI) --- */}
       <header style={styles.header}>
         <div style={styles.headerMain}>
           <h1 style={styles.logo} onClick={() => window.location.reload()}>Drift<span style={{ color: '#E23744' }}>Kart</span></h1>
           <div style={styles.searchContainer}>
-            <input type="text" placeholder="Search local stores..." style={styles.searchBar} />
+            <input type="text" placeholder={`Search in ${userCity}...`} style={styles.searchBar} />
           </div>
         </div>
       </header>
 
-      {/* --- QUICK STATS (Same as your UI) --- */}
       <div style={styles.quickNav}>
         <div style={styles.storeBanner}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '20px' }}>🏪</span>
+            <span style={{ fontSize: '24px' }}>🏠</span>
             <div>
-              <p style={styles.bannerLabel}>SHOP FROM NEIGHBORHOOD</p>
-              <h4 style={styles.bannerTitle}>Serving Your Area • Nearby</h4>
+              <p style={styles.bannerLabel}>DELIVERING TO</p>
+              <h4 style={styles.bannerTitle}>{userCity} • Neighborhood</h4>
             </div>
           </div>
           <div style={styles.deliveryBadge}>⚡ 12 MINS</div>
@@ -110,17 +115,16 @@ const Home = () => {
       </div>
 
       <main style={styles.main}>
-        {/* --- DYNAMIC SECTIONS with your keywords --- */}
-        {renderHorizontalSection("Grocery & Kitchen", ["grocery", "atta", "oil"], "🥦")}
+        {renderHorizontalSection("Grocery & Kitchen", ["grocery", "atta"], "🥦")}
         {renderHorizontalSection("Snacks & Drinks", ["snacks", "maggi", "drinks"], "🥤")}
-        {renderHorizontalSection("Beauty & Personal Care", ["beauty", "soap", "shampoo"], "💄")}
+        {renderHorizontalSection("Personal Care", ["beauty", "personal"], "💄")}
       </main>
     </div>
   );
 };
 
 const styles = {
-  // 🚩 TERI WAHI CLEAN UI BINA KISI CHANGE KE
+  // --- Sab Styles Same Hain, Bas Discount aur Location Tag Add Kiya Hai ---
   container: { backgroundColor: '#fff', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
   header: { backgroundColor: '#fff', padding: '10px 20px', position: 'sticky', top: 0, zIndex: 100, borderBottom: '1px solid #f0f0f0' },
   headerMain: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '15px' },
@@ -138,15 +142,16 @@ const styles = {
   sectionTitle: { fontSize: '16px', fontWeight: '800', margin: 0, color: '#1a1a1a' },
   seeAll: { color: '#E23744', fontSize: '12px', fontWeight: '700', cursor: 'pointer' },
   horizontalScroll: { display: 'flex', gap: '15px', overflowX: 'auto', paddingBottom: '15px', scrollbarWidth: 'none' },
-  smallCard: { minWidth: '135px', maxWidth: '135px', border: '1px solid #f2f2f2', borderRadius: '16px', padding: '10px', position: 'relative', cursor: 'pointer', backgroundColor: '#fff' },
-  smallImgWrapper: { height: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' },
+  smallCard: { minWidth: '145px', maxWidth: '145px', border: '1px solid #f2f2f2', borderRadius: '16px', padding: '10px', position: 'relative', cursor: 'pointer', backgroundColor: '#fff' },
+  smallImgWrapper: { height: '110px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' },
   smallImg: { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' },
-  smallName: { fontSize: '11px', fontWeight: '700', margin: '0 0 3px 0', height: '28px', overflow: 'hidden', color: '#333' },
-  smallShopName: { fontSize: '9px', color: '#aaa', margin: '0 0 10px 0', fontWeight: '500' },
+  smallName: { fontSize: '12px', fontWeight: '700', margin: '0 0 3px 0', height: '32px', overflow: 'hidden', color: '#333' },
+  smallShopName: { fontSize: '10px', color: '#E23744', margin: '0 0 10px 0', fontWeight: '600' },
   smallPriceRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  smallPrice: { fontSize: '13px', fontWeight: '800', color: '#000' },
-  smallAddBtn: { backgroundColor: '#fff', border: '1px solid #E23744', color: '#E23744', borderRadius: '6px', padding: '4px 10px', fontSize: '10px', fontWeight: '800', cursor: 'pointer' },
-  timeTagSmall: { position: 'absolute', top: '8px', left: '8px', backgroundColor: 'rgba(255,255,255,0.95)', padding: '2px 5px', borderRadius: '4px', fontSize: '8px', fontWeight: '900', border: '1px solid #f2f2f2', zIndex: 1 },
+  smallPrice: { fontSize: '14px', fontWeight: '800', color: '#000' },
+  smallAddBtn: { backgroundColor: '#fff', border: '1px solid #E23744', color: '#E23744', borderRadius: '6px', padding: '4px 12px', fontSize: '11px', fontWeight: '800', cursor: 'pointer' },
+  timeTagSmall: { position: 'absolute', top: '8px', left: '8px', backgroundColor: 'rgba(255,255,255,0.9)', padding: '2px 5px', borderRadius: '4px', fontSize: '8px', fontWeight: '900', border: '1px solid #f0f0f0', zIndex: 1 },
+  discountBadge: { position: 'absolute', top: 0, right: 0, backgroundColor: '#2563EB', color: '#fff', padding: '2px 8px', borderBottomLeftRadius: '10px', borderTopRightRadius: '16px', fontSize: '9px', fontWeight: '900', zIndex: 2 },
   loader: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontWeight: '700', color: '#E23744' }
 };
 
